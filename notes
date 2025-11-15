@@ -1,0 +1,12 @@
+1. Crear el entorno virtual (Python venv)
+cd mi_proyecto
+python3 -m venv env
+
+2. Activar el entorno virtual
+source env/bin/activate
+
+3. Instalar dependencias desde requirements.txt
+pip install -r requirements.txt
+
+4. Borrar env 
+rm -rf venv
