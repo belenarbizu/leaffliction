@@ -14,6 +14,9 @@ def get_directory(directory):
     try:
         images = []
         path = pathlib.Path(directory)
+        if not os.path.exists(directory):
+            print(f"Error: The directory '{directory}' does not exist.")
+            return []
         if path.is_file():
             print("Error: Please provide a directory path, not a file path.")
             return []
