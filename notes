@@ -10,3 +10,6 @@ pip install -r requirements.txt
 
 4. Borrar env 
 rm -rf venv
+
+execute Augmentation:
+python3 src/Augmentation.py "../leaves/images/Apple_Black_rot/image (23).JPG"

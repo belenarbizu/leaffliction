@@ -1,8 +1,11 @@
+from html import parser
 import os
 import sys
 import cv2
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+from utils import get_directory, count_images
 
 
 def rotate_image(image, angle=45):
@@ -79,28 +82,37 @@ def display_images(org_image, titles, images):
 	plt.show()
 
 
-def main():
+def data_augmentation(dir):
 	augmented_directory = "augmented_directory/"
 	os.makedirs(augmented_directory, exist_ok=True)
-	img_path = sys.argv[1]
-	image = cv2.imread(img_path)
-	if image is None:
-		print("Image not found:", img_path)
-		return
-
-	augmentations = {
-		"Rotate": rotate_image(image),
-		"Filp":	flip_image(image),
-		"Blur": blur_image(image),
-		"Contrast": contrast_image(image),
-		"Scaling": scale_image(image),
-		"Shear": shear_image(image),
-	}
-
-	display_images(image, augmentations.keys(), augmentations.values())
+	images = get_directory(dir)
+	print("Found", len(images), "images for augmentation.")
 	# save in directory
 	# out_path = os.path.join(augmented_directory, f"{os.path.basename(img_path)[:-4]}_{aug_name}" + '.JPG')
 	# cv2.imwrite(out_path, aug_image)
+
+
+def main():
+	parser = argparse.ArgumentParser(description="Data Augmentation in directory and transformation on a single image")
+	parser.add_argument("path", type=str, help="Path to directory to grow or the image to transform")
+	args = parser.parse_args()
+	if os.path.isdir(args.path):
+		data_augmentation(args.path)
+	else:
+		image = cv2.imread(args.path)
+		if image is None:
+			print("Image not found:", image)
+			return
+
+		augmentations = {
+			"Rotate": rotate_image(image),
+			"Filp":	flip_image(image),
+			"Blur": blur_image(image),
+			"Contrast": contrast_image(image),
+			"Scaling": scale_image(image),
+			"Shear": shear_image(image),
+		}
+		display_images(image, augmentations.keys(), augmentations.values())
 
 
 if __name__ == "__main__":
