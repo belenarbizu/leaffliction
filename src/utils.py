@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from collections import Counter
 
@@ -10,9 +11,12 @@ def get_directory(directory):
     try:
         images = []
         path = Path(directory)
-        print("Scanning directory:", directory)
-        print("path:", path)
-
+        if not os.path.exists(directory):
+            print(f"Error: The directory '{directory}' does not exist.")
+            return []
+        if path.is_file():
+            print("Error: Please provide a directory path, not a file path.")
+            return []
         for file in path.rglob('*'):
             if file.is_file():
                 images.append(file)
