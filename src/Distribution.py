@@ -1,7 +1,41 @@
 import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
-from utils import get_directory, count_images
+
+
+def get_directory(directory):
+    """
+    Get all image files in the given directory and its subdirectories.
+    Returns a list of file paths.
+    """
+    try:
+        images = []
+        path = pathlib.Path(directory)
+        if not os.path.exists(directory):
+            print(f"Error: The directory '{directory}' does not exist.")
+            return []
+        if path.is_file():
+            print("Error: Please provide a directory path, not a file path.")
+            return []
+        for file in path.rglob('*'):
+            if file.is_file():
+                images.append(file)
+        return images
+    except FileNotFoundError:
+        print(f"Error: '{directory}' doesn't exist.")
+        return 0
+
+
+def count_images(images):
+    """
+    Count the number of images in each subdirectory.
+    Returns a Counter object with directory names as keys and image counts as values.
+    """
+    num_images = Counter()
+    for img in images:
+        dir_name = img.parent.name
+        num_images[dir_name] += 1
+    return num_images
 
 
 def plot_pie(num_images, dir_name):
@@ -49,6 +83,8 @@ def main():
 
     directory = args.directory
     images = get_directory(directory)
+    if not images:
+        exit(1)
     num_images = count_images(images)
     plot_pie(num_images, Path(directory).name)
     plot_bar(num_images, Path(directory).name)
