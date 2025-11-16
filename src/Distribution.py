@@ -14,6 +14,9 @@ def get_directory(directory):
     try:
         images = []
         path = pathlib.Path(directory)
+        if path.is_file():
+            print("Error: Please provide a directory path, not a file path.")
+            return []
         for file in path.rglob('*'):
             if file.is_file():
                 images.append(file)
@@ -80,6 +83,8 @@ def main():
 
     directory = args.directory
     images = get_directory(directory)
+    if not images:
+        exit(1)
     num_images = count_images(images)
     plot_pie(num_images, Path(directory).name)
     plot_bar(num_images, Path(directory).name)
