@@ -138,13 +138,10 @@ def data_augmentation(dir):
 		
 		print(f"Augmenting '{subdir_name}': {count} -> {target_count} images (adding {needed_images})")
 		for i in range(needed_images): # loop through needed images
-			needed_images -= 6
 			print("needed images left: ", needed_images)
-			print("images: ", subdir_name)
 			
 			for img in images_by_subdir[subdir_name]:
 				image = cv2.imread(str(img))
-				print("image len: ", len(image))
 				base_name = os.path.splitext(os.path.basename(str(img)))[0]
 				#print("base name ", img)
 				img_path = Path(img)
@@ -168,6 +165,10 @@ def data_augmentation(dir):
 						f"{base_name}_{aug_name}{ext}"
 					)
 					cv2.imwrite(out_path, aug_image)
+				
+				if needed_images <= 0:
+					print(f"'{subdir_name}': Already has {target_count} images (max count)")
+					continue
 		print(f"\nCopied {target_count - count} files in {out_path}")
 
 
