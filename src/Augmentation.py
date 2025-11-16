@@ -94,6 +94,7 @@ def main():
 		"Blur": blur_image(image),
 		"Contrast": contrast_image(image),
 		"Scaling": scale_image(image),
+		"Shear": shear_image(image),
 	}
 
 	display_images(image, augmentations.keys(), augmentations.values())
@@ -104,4 +105,3 @@ def main():
 
 if __name__ == "__main__":
 	main()
-		"Shear": shear_image(image),
