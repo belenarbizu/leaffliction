@@ -1,9 +1,8 @@
-from html import parser
 import os
-import sys
 import cv2
 import argparse
 import numpy as np
+from pathlib import Path
 import matplotlib.pyplot as plt
 from utils import get_directory, count_images
 
@@ -82,14 +81,94 @@ def display_images(org_image, titles, images):
 	plt.show()
 
 
+def print_subdir_info(name, max, count):
+	"""
+	Prints information about each subdirectory.
+	"""
+	print(f"Subdirectory: {name}")
+	print(f"  Image Count: {count}")
+	print(f"  Left to impliment {max - count}")
+
+
 def data_augmentation(dir):
+	"""
+	Augment images in subdirectories to match the maximum image count.
+	Each subdirectory with fewer images will be augmented with transformed versions.
+	"""
 	augmented_directory = "augmented_directory/"
+	class_name = os.path.basename(os.path.normpath(dir))
 	os.makedirs(augmented_directory, exist_ok=True)
 	images = get_directory(dir)
-	print("Found", len(images), "images for augmentation.")
-	# save in directory
-	# out_path = os.path.join(augmented_directory, f"{os.path.basename(img_path)[:-4]}_{aug_name}" + '.JPG')
-	# cv2.imwrite(out_path, aug_image)
+	# check if no subdirs -> 
+	# 	print(f"No subdirectories found in '{parent_dir}'.")
+	# 	return
+	
+	num_images = count_images(images)
+	target_count = max(num_images.values())
+	print(num_images)
+
+	images_by_subdir = {}
+	for img in images:
+		dir_name = img.parent.name
+		if dir_name not in images_by_subdir:
+			images_by_subdir[dir_name] = []
+		images_by_subdir[dir_name].append(img)
+
+	for subdir_name, count in num_images.items(): # loop through subdirs
+		needed_images = target_count - count
+	
+
+		for img in images_by_subdir[subdir_name]:
+			base_name = os.path.basename(str(img))
+			image = cv2.imread(str(img))
+			out_path = os.path.join(
+				augmented_directory,
+				class_name,
+				subdir_name,
+				base_name
+			)
+			os.makedirs(os.path.dirname(out_path), exist_ok=True)
+			cv2.imwrite(out_path, image)
+		
+		print(f"\nCopied {count} files in {out_path}")
+
+		if needed_images <= 0:
+			print(f"'{subdir_name}': Already has {target_count} images (max count)")
+			continue
+		
+		print(f"Augmenting '{subdir_name}': {count} -> {target_count} images (adding {needed_images})")
+		for i in range(needed_images): # loop through needed images
+			needed_images -= 6
+			print("needed images left: ", needed_images)
+			print("images: ", subdir_name)
+			
+			for img in images_by_subdir[subdir_name]:
+				image = cv2.imread(str(img))
+				print("image len: ", len(image))
+				base_name = os.path.splitext(os.path.basename(str(img)))[0]
+				#print("base name ", img)
+				img_path = Path(img)
+				ext = img_path.suffix
+				augmentations = { # Cycle through augmentation functions
+					"Rotate": rotate_image(image),
+					"Filp":	flip_image(image),
+					"Blur": blur_image(image),
+					"Contrast": contrast_image(image),
+					"Scaling": scale_image(image),
+					"Shear": shear_image(image),
+				}
+				
+				for i in range(len(augmentations.values())): # save in directory
+					aug_name = list(augmentations.keys())[i]
+					aug_image = list(augmentations.values())[i]
+					out_path = os.path.join(
+						augmented_directory,
+						class_name,
+						subdir_name,
+						f"{base_name}_{aug_name}{ext}"
+					)
+					cv2.imwrite(out_path, aug_image)
+		print(f"\nCopied {target_count - count} files in {out_path}")
 
 
 def main():
