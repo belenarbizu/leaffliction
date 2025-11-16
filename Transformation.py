@@ -2,6 +2,7 @@ import argparse
 import cv2
 from plantcv import plantcv as pcv
 from pathlib import Path
+import rembg
 
 
 def check_path(file_path):
@@ -52,11 +53,27 @@ def mask(image, plot=True):
     masked_image = pcv.apply_mask(image, mask=mask_binary, mask_color="white")
     if plot:
         pcv.plot_image(masked_image, title="Masked Image")
+    return masked_image
 
 
-def roi_object(image, plot=True):
-    pcv.params.debug = "plot" if plot else None
-    pcv.roi.rectangle(img=image, x=0, y=0, h=image.shape[0], w=image.shape[1])
+def roi_object(image, masked, plot=True):
+    # remove background
+    image_without_bg = rembg.remove(image)
+    # convert to grayscale using hsv channel 's'
+    l_grayscale = pcv.rgb2gray_hsv(image_without_bg, channel='s')
+    # create binary image using threshold. the pixels above the threshold are set to white
+    l_thresh = pcv.threshold.binary(gray_img=l_grayscale, threshold=85, object_type='light')
+    # fill small objects. eliminate objects smaller than 200 pixels to reduce noise
+    filled = pcv.fill(bin_img=l_thresh, size=200)
+    # define ROI
+    roi = pcv.roi.rectangle(img=image, x=0, y=0, h=image.shape[0], w=image.shape[1])
+    # filter the filled image using the ROI
+    kept_mask = pcv.roi.filter(mask=filled, roi=roi, roi_type='partial')
+    roi_image = image.copy()
+    # highlight the ROI in green
+    roi_image[kept_mask != 0] = (0, 255, 0)
+    if plot:
+        pcv.plot_image(roi_image, title="ROI Image")
 
 
 def main():
@@ -79,14 +96,18 @@ def main():
     if args.path:
         image = check_path(args.path)
         gaussian_blur(image)
-        mask(image)
-        roi_object(image)
+        masked_image = mask(image)
+        roi_object(image, masked_image)
     if args.source and args.destination:
         images = check_directory(args.source)
         for img in images:
-            gaussian_blur(img, plot=False)
-            mask(img, plot=False)
-            roi_object(img, plot=False)
+            if args.gaussian:
+                gaussian_blur(img, plot=False)
+            if args.mask:
+                masked_image = mask(img, plot=False)
+            if args.roi:
+                roi_object(img, masked_image, plot=False)
+            
 
 if __name__ == "__main__":
     main()
