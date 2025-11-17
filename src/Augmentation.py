@@ -71,6 +71,7 @@ def display_images(org_image, titles, images):
 	titles.insert(0, "Original")
 	images.insert(0, org_image)
 	plt.figure(figsize=(18, 10))
+
 	for i in range(len(images)):
 		plt.subplot(2, 4, 1 + i)
 		plt.imshow(cv2.cvtColor(images[i], cv2.COLOR_BGR2RGB))
@@ -81,13 +82,15 @@ def display_images(org_image, titles, images):
 	plt.show()
 
 
-def print_subdir_info(name, max, count):
-	"""
-	Prints information about each subdirectory.
-	"""
-	print(f"Subdirectory: {name}")
-	print(f"  Image Count: {count}")
-	print(f"  Left to impliment {max - count}")
+def get_augmentations(image):
+	return {
+		"Rotate": rotate_image(image),
+		"Filp":	flip_image(image),
+		"Blur": blur_image(image),
+		"Contrast": contrast_image(image),
+		"Scaling": scale_image(image),
+		"Shear": shear_image(image),
+	}
 
 
 def data_augmentation(dir):
@@ -99,15 +102,10 @@ def data_augmentation(dir):
 	class_name = os.path.basename(os.path.normpath(dir))
 	os.makedirs(augmented_directory, exist_ok=True)
 	images = get_directory(dir)
-	# check if no subdirs -> 
-	# 	print(f"No subdirectories found in '{parent_dir}'.")
-	# 	return
-	
 	num_images = count_images(images)
 	target_count = max(num_images.values())
-	print(num_images)
-
 	images_by_subdir = {}
+
 	for img in images:
 		dir_name = img.parent.name
 		if dir_name not in images_by_subdir:
@@ -137,24 +135,16 @@ def data_augmentation(dir):
 		
 		print(f"Augmenting '{subdir_name}': {count} -> {target_count} images (adding {needed_images})")
 
-		for img in images_by_subdir[subdir_name]:
+		for img in images_by_subdir[subdir_name]: # loop thorugh all photos
 			if needed_images <= 0:
 				break
 
 			image = cv2.imread(str(img))
 			base_name = os.path.splitext(os.path.basename(str(img)))[0]
-			#print("base name ", img)
 			img_path = Path(img)
 			ext = img_path.suffix
 
-			augmentations = { # Cycle through augmentation functions
-				"Rotate": rotate_image(image),
-				"Filp":	flip_image(image),
-				"Blur": blur_image(image),
-				"Contrast": contrast_image(image),
-				"Scaling": scale_image(image),
-				"Shear": shear_image(image),
-			}
+			augmentations = get_augmentations(image)
 			
 			for i in range(len(augmentations.values())): # save in directory
 				if needed_images <= 0:
@@ -170,7 +160,10 @@ def data_augmentation(dir):
 				cv2.imwrite(out_path, aug_image)			
 				needed_images -= 1
 
-		print(f"Copied {target_count - count} files in {subdir_name}")
+		if needed_images > 0:
+			print(f"Impossible to rach {target_count}: (lacking {needed_images})")
+		else:
+			print(f"Copied {target_count - count} files in {subdir_name}")
 
 
 def main():
@@ -178,21 +171,19 @@ def main():
 	parser.add_argument("path", type=str, help="Path to directory to grow or the image to transform")
 	args = parser.parse_args()
 	if os.path.isdir(args.path):
-		data_augmentation(args.path)
+		for root, dirs, files in os.walk(args.path):
+			image_paths = [os.path.join(root, f) for f in files if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+			if len(image_paths) == 0 :
+				continue
+			print("\nProcessing directory:", root)
+			data_augmentation(root)
 	else:
 		image = cv2.imread(args.path)
 		if image is None:
 			print("Image not found:", image)
 			return
 
-		augmentations = {
-			"Rotate": rotate_image(image),
-			"Filp":	flip_image(image),
-			"Blur": blur_image(image),
-			"Contrast": contrast_image(image),
-			"Scaling": scale_image(image),
-			"Shear": shear_image(image),
-		}
+		augmentations = get_augmentations(image)
 		display_images(image, augmentations.keys(), augmentations.values())
 
 
