@@ -132,6 +132,12 @@ def analyze_image(image, mask, plot=True, destination=None, file_name=None):
         print(f"Error saving analyzed image: {e}")
 
 
+def pseudolandmarks(image, mask, plot=True, destination=None, file_name=None): 
+    """
+    Generate pseudolandmarks for the image.
+    """
+    pseudolandmarks = pcv.pseudilandmarks()
+
 def main():
     parser = argparse.ArgumentParser(description="Display image transformations.")
     parser.add_argument("path", type=str, help="File path image to be transformed.", default=None, nargs='?')
@@ -141,6 +147,7 @@ def main():
     parser.add_argument("-mask", "--mask", action="store_true", help="Apply masking to the image.")
     parser.add_argument("-roi", "--roi", action="store_true", help="Define region of interest on the image.")
     parser.add_argument("-analyze", "--analyze", action="store_true", help="Analyze the image.")
+    parser.add_argument("-pseudolandmarks", "--pseudolandmarks", action="store_true", help="Generate pseudolandmarks for the image.")
     args = parser.parse_args()
 
     if (args.path is None and args.source is None) or (args.path is not None and args.source is not None) or (args.path is not None and args.destination is not None):
@@ -156,6 +163,7 @@ def main():
         masked_image = mask(image)
         roi_mask = roi_object(image, masked_image)
         analyze_image(image, roi_mask)
+        pseu
     if args.source and args.destination:
         images, files_names = check_directory(args.source)
         for img, file_name in zip(images, files_names):
