@@ -5,8 +5,8 @@ This program will analyze a plant directory, counts all images in its subfolders
 ```bash
 python3 ./src/Distribution.py "./Apple"
 ```
-<img width="800" height="600" alt="Apple_bar_chart" src="https://github.com/user-attachments/assets/2ece7a09-e61c-4af7-9de5-edd99b656616" />
-<img width="800" height="600" alt="Apple_pie_chart" src="https://github.com/user-attachments/assets/0b6bdb82-b23c-40c3-aa4f-ee045abe9d25" />
+<img width="700" height="600" alt="Apple_bar_chart" src="https://github.com/user-attachments/assets/2ece7a09-e61c-4af7-9de5-edd99b656616" />
+<img width="700" height="600" alt="Apple_pie_chart" src="https://github.com/user-attachments/assets/0b6bdb82-b23c-40c3-aa4f-ee045abe9d25" />
 
 --- 
 ### 2. Image Transformation and Data Augmentation
