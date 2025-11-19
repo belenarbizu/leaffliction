@@ -132,11 +132,12 @@ def analyze_image(image, mask, plot=True, destination=None, file_name=None):
         print(f"Error saving analyzed image: {e}")
 
 
-def pseudolandmarks(image, mask, plot=True, destination=None, file_name=None): 
-    """
-    Generate pseudolandmarks for the image.
-    """
-    pseudolandmarks = pcv.pseudilandmarks()
+def invert_image(image, mask, plot=True, destination=None, file_name=None):
+    edges = cv2.Canny(mask, 100, 150)
+    inverted_image = cv2.bitwise_not(edges)
+    if plot:
+        pcv.plot_image(inverted_image)
+    return inverted_image
 
 def main():
     parser = argparse.ArgumentParser(description="Display image transformations.")
@@ -147,7 +148,7 @@ def main():
     parser.add_argument("-mask", "--mask", action="store_true", help="Apply masking to the image.")
     parser.add_argument("-roi", "--roi", action="store_true", help="Define region of interest on the image.")
     parser.add_argument("-analyze", "--analyze", action="store_true", help="Analyze the image.")
-    parser.add_argument("-pseudolandmarks", "--pseudolandmarks", action="store_true", help="Generate pseudolandmarks for the image.")
+    parser.add_argument("-invert", "--invert", action="store_true", help="Invert the image colors.")
     args = parser.parse_args()
 
     if (args.path is None and args.source is None) or (args.path is not None and args.source is not None) or (args.path is not None and args.destination is not None):
@@ -161,9 +162,9 @@ def main():
         image = check_path(args.path)
         gaussian_blur(image)
         masked_image = mask(image)
+        invert_image(image, masked_image)
         roi_mask = roi_object(image, masked_image)
         analyze_image(image, roi_mask)
-        pseu
     if args.source and args.destination:
         images, files_names = check_directory(args.source)
         for img, file_name in zip(images, files_names):
