@@ -145,6 +145,7 @@ def negative_image(image, mask, plot=True, destination=None, file_name=None):
         pcv.plot_image(negative)
     return image 
 
+
 def main():
     parser = argparse.ArgumentParser(description="Display image transformations.")
     parser.add_argument("path", type=str, help="File path image to be transformed.", default=None, nargs='?')
