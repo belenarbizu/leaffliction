@@ -132,12 +132,18 @@ def analyze_image(image, mask, plot=True, destination=None, file_name=None):
         print(f"Error saving analyzed image: {e}")
 
 
-def invert_image(image, mask, plot=True, destination=None, file_name=None):
-    edges = cv2.Canny(mask, 100, 150)
-    inverted_image = cv2.bitwise_not(edges)
+def edges_image(image, mask, plot=True, destination=None, file_name=None):
+    edges = cv2.Canny(mask, 150, 200)
     if plot:
-        pcv.plot_image(inverted_image)
-    return inverted_image
+        pcv.plot_image(edges)
+    return edges
+
+
+def negative_image(image, mask, plot=True, destination=None, file_name=None):
+    negative = cv2.bitwise_not(image)
+    if plot:
+        pcv.plot_image(negative)
+    return image 
 
 def main():
     parser = argparse.ArgumentParser(description="Display image transformations.")
@@ -148,7 +154,8 @@ def main():
     parser.add_argument("-mask", "--mask", action="store_true", help="Apply masking to the image.")
     parser.add_argument("-roi", "--roi", action="store_true", help="Define region of interest on the image.")
     parser.add_argument("-analyze", "--analyze", action="store_true", help="Analyze the image.")
-    parser.add_argument("-invert", "--invert", action="store_true", help="Invert the image colors.")
+    parser.add_argument("-invert", "--invert", action="store_true", help="Find the edges in the image.")
+    parser.add_argument("-negative", "--negative", action="store_true", help="Invert the image colors.")
     args = parser.parse_args()
 
     if (args.path is None and args.source is None) or (args.path is not None and args.source is not None) or (args.path is not None and args.destination is not None):
@@ -162,7 +169,8 @@ def main():
         image = check_path(args.path)
         gaussian_blur(image)
         masked_image = mask(image)
-        invert_image(image, masked_image)
+        negative_image(image, masked_image)
+        edges_image(image, masked_image)
         roi_mask = roi_object(image, masked_image)
         analyze_image(image, roi_mask)
     if args.source and args.destination:
