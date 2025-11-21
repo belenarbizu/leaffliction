@@ -2,8 +2,17 @@ import argparse
 import os
 import tensorflow as tf
 import warnings
+from utils import get_directory
+from tensorflow.keras import layers, models
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 warnings.filterwarnings("ignore")
+
+
+def check_dir(directory):
+    subdirs = [d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))]
+    if len(subdirs) < 2:
+        print("The directory must contain at least two subdirectories for classification.")
+        exit(1)
 
 
 def split_dataset(data_dir, split_ratio):
@@ -28,6 +37,30 @@ def split_dataset(data_dir, split_ratio):
         image_size=(256, 256),
         # batch_size=32
     )
+    return train_df, val_df
+
+
+def train(train_data, val_data):
+    """
+    Train a simple CNN model on the training data and validate on the validation data.
+    """
+    model = models.Sequential([
+        layers.Conv2D(32, (3, 3), activation='relu'),
+        layers.MaxPooling2D((2, 2)),
+        layers.Conv2D(64, (3, 3), activation='relu'),
+        layers.MaxPooling2D((2, 2)),
+        layers.Flatten(),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(len(train_data.class_names), activation='softmax')
+    ])
+
+    model.compile(optimizer='adam',
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+
+    model.fit(train_data, validation_data=val_data, epochs=3)
+    results = model.evaluate(val_data)
+    print(f"Validation Loss: {results[0]}, Validation Accuracy: {results[1]}")
 
 
 def main():
@@ -35,7 +68,13 @@ def main():
     parser.add_argument("data_dir", type=str, help="Directory containing the dataset.", default=None)
     parser.add_argument("-split", "--split", type=float, help="Ratio to split the dataset", default=0.8)
     args = parser.parse_args()
-    split_dataset(args.data_dir, args.split)
+
+    check_dir(args.data_dir)
+    images = get_directory(args.data_dir)
+    if not images:
+        exit(1)
+    train_data, val_data = split_dataset(args.data_dir, args.split)
+    train(train_data, val_data)
 
 
 if __name__ == "__main__":
