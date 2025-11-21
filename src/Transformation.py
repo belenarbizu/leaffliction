@@ -4,6 +4,7 @@ from plantcv import plantcv as pcv
 from pathlib import Path
 import rembg
 import os
+from utils import get_directory
 
 
 def check_path(file_path):
@@ -146,11 +147,50 @@ def negative_image(image, mask, plot=True, destination=None, file_name=None):
     return image 
 
 
+def transformation_image(source_dir, destination_dir, filter=None):
+    """
+    Apply one or a series of transformations to each of the 
+    original image in a each subdirectory.
+    """
+    class_name = os.path.basename(os.path.normpath(source_dir))
+    os.makedirs(destination_dir, exist_ok=True)
+    images = get_directory(source_dir)
+    
+    # apply one filter to each of the original images
+    if filter:
+        for img in images:
+            base_name = os.path.basename(str(img))
+            image = cv2.imread(str(img))
+            transformed_image = filter(image)
+            out_path = os.path.join(
+                destination_dir,
+                class_name,
+                base_name
+            )
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            cv2.imwrite(out_path, transformed_image)
+    # apply a series of transformations to each of the original images
+    else:
+        for img in images:
+            base_name = os.path.basename(str(img))
+            image = cv2.imread(str(img))
+            out_path = os.path.join(
+                destination_dir,
+                class_name,
+                base_name
+            )
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            cv2.imwrite(out_path, image)
+
+
+
+
 def main():
     parser = argparse.ArgumentParser(description="Display image transformations.")
     parser.add_argument("path", type=str, help="File path image to be transformed.", default=None, nargs='?')
     parser.add_argument("-src", "--source", type=str, help="Directory source of the image.", default=None, nargs='?')
     parser.add_argument("-dst", "--destination", type=str, help="Directory destination to save transformed images.", default=None, nargs='?')
+    parser.add_argument("-filter", "--filter", action="store_true", help="Apply specific filter to the images in directory.")
     parser.add_argument("-gaussian", "--gaussian", action="store_true", help="Apply Gaussian blur to the image.")
     parser.add_argument("-mask", "--mask", action="store_true", help="Apply masking to the image.")
     parser.add_argument("-roi", "--roi", action="store_true", help="Define region of interest on the image.")

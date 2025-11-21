@@ -104,6 +104,7 @@ def data_augmentation(dir):
 	images = get_directory(dir)
 	num_images = count_images(images)
 	target_count = max(num_images.values())
+	print("Target image count per subdirectory:", target_count)
 	images_by_subdir = {}
 
 	for img in images:
@@ -114,7 +115,7 @@ def data_augmentation(dir):
 
 	for subdir_name, count in num_images.items(): # loop through subdirs
 		needed_images = target_count - count
-	
+
 		for img in images_by_subdir[subdir_name]:
 			base_name = os.path.basename(str(img))
 			image = cv2.imread(str(img))
@@ -126,8 +127,8 @@ def data_augmentation(dir):
 			)
 			os.makedirs(os.path.dirname(out_path), exist_ok=True)
 			cv2.imwrite(out_path, image)
-		
-		print(f"\nCopied {count} files in {subdir_name}")
+
+		print(f"\nCopied {count} files in {subdir_name}, needing {needed_images} more to reach {target_count}")
 
 		if needed_images <= 0:
 			print(f"'{subdir_name}': Already has {target_count} images (max count)")
@@ -176,7 +177,9 @@ def main():
 			if len(image_paths) == 0 :
 				continue
 			print("\nProcessing directory:", root)
-			data_augmentation(root)
+			print("IMAGE PATHS:", image_paths)
+			# target_count = max(count_images(image_paths).values())
+			data_augmentation(root, )
 	else:
 		image = cv2.imread(args.path)
 		if image is None:
