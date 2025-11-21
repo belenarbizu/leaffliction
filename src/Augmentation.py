@@ -1,8 +1,10 @@
 import os
-import sys
 import cv2
+import argparse
 import numpy as np
+from pathlib import Path
 import matplotlib.pyplot as plt
+from utils import get_directory, count_images
 
 
 def rotate_image(image, angle=45):
@@ -69,6 +71,7 @@ def display_images(org_image, titles, images):
 	titles.insert(0, "Original")
 	images.insert(0, org_image)
 	plt.figure(figsize=(18, 10))
+
 	for i in range(len(images)):
 		plt.subplot(2, 4, 1 + i)
 		plt.imshow(cv2.cvtColor(images[i], cv2.COLOR_BGR2RGB))
@@ -79,16 +82,8 @@ def display_images(org_image, titles, images):
 	plt.show()
 
 
-def main():
-	augmented_directory = "augmented_directory/"
-	os.makedirs(augmented_directory, exist_ok=True)
-	img_path = sys.argv[1]
-	image = cv2.imread(img_path)
-	if image is None:
-		print("Image not found:", img_path)
-		return
-
-	augmentations = {
+def get_augmentations(image):
+	return {
 		"Rotate": rotate_image(image),
 		"Filp":	flip_image(image),
 		"Blur": blur_image(image),
@@ -97,10 +92,99 @@ def main():
 		"Shear": shear_image(image),
 	}
 
-	display_images(image, augmentations.keys(), augmentations.values())
-	# save in directory
-	# out_path = os.path.join(augmented_directory, f"{os.path.basename(img_path)[:-4]}_{aug_name}" + '.JPG')
-	# cv2.imwrite(out_path, aug_image)
+
+def data_augmentation(dir):
+	"""
+	Augment images in subdirectories to match the maximum image count.
+	Each subdirectory with fewer images will be augmented with transformed versions.
+	"""
+	augmented_directory = "augmented_directory/"
+	class_name = os.path.basename(os.path.normpath(dir))
+	os.makedirs(augmented_directory, exist_ok=True)
+	images = get_directory(dir)
+	num_images = count_images(images)
+	target_count = max(num_images.values())
+	images_by_subdir = {}
+
+	for img in images:
+		dir_name = img.parent.name
+		if dir_name not in images_by_subdir:
+			images_by_subdir[dir_name] = []
+		images_by_subdir[dir_name].append(img)
+
+	for subdir_name, count in num_images.items(): # loop through subdirs
+		needed_images = target_count - count
+	
+		for img in images_by_subdir[subdir_name]:
+			base_name = os.path.basename(str(img))
+			image = cv2.imread(str(img))
+			out_path = os.path.join(
+				augmented_directory,
+				class_name,
+				subdir_name,
+				base_name
+			)
+			os.makedirs(os.path.dirname(out_path), exist_ok=True)
+			cv2.imwrite(out_path, image)
+		
+		print(f"\nCopied {count} files in {subdir_name}")
+
+		if needed_images <= 0:
+			print(f"'{subdir_name}': Already has {target_count} images (max count)")
+			continue
+		
+		print(f"Augmenting '{subdir_name}': {count} -> {target_count} images (adding {needed_images})")
+
+		for img in images_by_subdir[subdir_name]: # loop thorugh all photos
+			if needed_images <= 0:
+				break
+
+			image = cv2.imread(str(img))
+			base_name = os.path.splitext(os.path.basename(str(img)))[0]
+			img_path = Path(img)
+			ext = img_path.suffix
+
+			augmentations = get_augmentations(image)
+			
+			for i in range(len(augmentations.values())): # save in directory
+				if needed_images <= 0:
+					break
+				aug_name = list(augmentations.keys())[i]
+				aug_image = list(augmentations.values())[i]
+				out_path = os.path.join(
+					augmented_directory,
+					class_name,
+					subdir_name,
+					f"{base_name}_{aug_name}{ext}"
+				)
+				cv2.imwrite(out_path, aug_image)			
+				needed_images -= 1
+
+		if needed_images > 0:
+			print(f"Impossible to rach {target_count}: (lacking {needed_images})")
+		else:
+			print(f"Copied {target_count - count} files in {subdir_name}")
+
+
+def main():
+	parser = argparse.ArgumentParser(description="Data Augmentation in directory and transformation on a single image")
+	parser.add_argument("path", type=str, help="Path to directory to grow or the image to transform")
+	args = parser.parse_args()
+	if os.path.isdir(args.path):
+		for root, dirs, files in os.walk(args.path):
+			image_paths = [os.path.join(root, f) for f in files if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+			if len(image_paths) == 0 :
+				continue
+			print("\nProcessing directory:", root)
+			data_augmentation(root)
+	else:
+		image = cv2.imread(args.path)
+		if image is None:
+			print("Image not found:", image)
+			return
+
+		augmentations = get_augmentations(image)
+		display_images(image, augmentations.keys(), augmentations.values())
 
 
 if __name__ == "__main__":
