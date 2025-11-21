@@ -1,11 +1,9 @@
 opencv-python==4.10.0.84
 numpy==2.0.0
 matplotlib==3.9.0
-pillow==10.3.0
-scikit-image==0.24.0
 plantcv==4.9
-scikit-learn==1.4.2
 altair>=5.0.0,<6.0.0
 ipython==8.37.0
 rembg==2.0.67
 onnxruntime==1.23.2
+flake8==6.1.0

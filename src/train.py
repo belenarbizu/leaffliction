@@ -1,7 +1,9 @@
 import argparse
 import os
 import tensorflow as tf
+import warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+warnings.filterwarnings("ignore")
 
 
 def split_dataset(data_dir, split_ratio):
