@@ -45,12 +45,16 @@ def train(train_data, val_data):
     Train a simple CNN model on the training data and validate on the validation data.
     """
     model = models.Sequential([
-        layers.Conv2D(32, (3, 3), activation='relu'),
+        layers.Rescaling(1.0 / 255),
+        layers.Conv2D(64, (3, 3), activation='relu'),
         layers.MaxPooling2D((2, 2)),
         layers.Conv2D(64, (3, 3), activation='relu'),
         layers.MaxPooling2D((2, 2)),
+        layers.Conv2D(32, (3, 3), activation='relu'),
+        layers.MaxPooling2D((2, 2)),
         layers.Flatten(),
-        layers.Dense(64, activation='relu'),
+        layers.Dense(128, activation='relu'),
+        layers.Dense(128, activation='relu'),
         layers.Dense(len(train_data.class_names), activation='softmax')
     ])
 
@@ -58,9 +62,8 @@ def train(train_data, val_data):
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
-    model.fit(train_data, validation_data=val_data, epochs=3)
-    results = model.evaluate(val_data)
-    print(f"Validation Loss: {results[0]}, Validation Accuracy: {results[1]}")
+    model.fit(train_data, validation_data=val_data, epochs=4)
+    return model
 
 
 def main():
@@ -74,7 +77,11 @@ def main():
     if not images:
         exit(1)
     train_data, val_data = split_dataset(args.data_dir, args.split)
-    train(train_data, val_data)
+
+    model = train(train_data, val_data)
+    results = model.evaluate(val_data)
+    print(f"Validation Loss: {results[0]}, Validation Accuracy: {results[1]}")
+    model.save("model/model.h5")
 
 
 if __name__ == "__main__":
