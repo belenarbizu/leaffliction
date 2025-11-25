@@ -94,29 +94,23 @@ def get_augmentations(image):
 
 
 def data_augmentation(dir, target_count, images, num_images):
-    """
-    Augment images in subdirectories to match the maximum image count.
-    Each subdirectory with fewer images will be augmented with transformed versions.
-    """
-    class_name = Path(dir).name
-    pure_name = class_name.split("_")[0]
-    if isinstance(target_count, dict):  
-        target_count = target_count[pure_name]
-    else:
-        ValueError("No target count recevied")
-    augmented_directory = "augmented_directory/"
+    class_name = Path(dir).name              # e.g. "Apple_healthy"
+    pure_name = class_name.split("_")[0]     # "Apple"
+
+    # target count for this class
+    target_count = target_count[pure_name]
+
+    # num_images is ALWAYS a dict: {"Apple_healthy": 1640, ...}
     count = num_images[class_name]
+
+    augmented_directory = "augmented_directory/"
     os.makedirs(augmented_directory, exist_ok=True)
-    images_by_subdir = {}
 
+    needed_images = target_count - count
+
+    # Copy originals
     for img in images:
-        dir_name = img.parent.name
-        images_by_subdir.setdefault(dir_name, []).append(img)
-
-    print("HERE ", class_name)
-    for img in images_by_subdir[class_name]:
-        needed_images = target_count - count
-        base_name = os.path.basename(str(img))
+        base_name = Path(img).name
         image = cv2.imread(str(img))
         out_path = os.path.join(
             augmented_directory,
@@ -127,43 +121,36 @@ def data_augmentation(dir, target_count, images, num_images):
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         cv2.imwrite(out_path, image)
 
-    print(f"\nCopied {count} files in {class_name}, needing {needed_images} more to reach {target_count}")
+    print(f"\nCopied {count} files in {class_name}, need {needed_images} more")
 
     if needed_images <= 0:
-        print(f"'{class_name}': Already has {target_count} images (max count)")
         return
-    
-    print(f"Augmenting '{class_name}': {count} -> {target_count} images (adding {needed_images})")
 
-    for img in images_by_subdir[class_name]: # loop thorugh all photos
+    # Augmentation
+    for img in images:
         if needed_images <= 0:
             break
 
         image = cv2.imread(str(img))
-        base_name = os.path.splitext(os.path.basename(str(img)))[0]
-        img_path = Path(img)
-        ext = img_path.suffix
+        base_name = Path(img).stem
+        ext = Path(img).suffix
 
         augmentations = get_augmentations(image)
-        
-        for i in range(len(augmentations.values())): # save in directory
+
+        for aug_name, aug_image in augmentations.items():
             if needed_images <= 0:
                 break
-            aug_name = list(augmentations.keys())[i]
-            aug_image = list(augmentations.values())[i]
+
             out_path = os.path.join(
                 augmented_directory,
                 pure_name,
                 class_name,
                 f"{base_name}_{aug_name}{ext}"
             )
-            cv2.imwrite(out_path, aug_image)			
+            cv2.imwrite(out_path, aug_image)
             needed_images -= 1
 
-    if needed_images > 0:
-        print(f"Impossible to rach {target_count}: (lacking {needed_images})")
-    else:
-        print(f"Copied {target_count - count} files in {class_name}")
+    print(f"Final count: {target_count} images in {class_name}")
 
 
 def get_target_count(root_path):
@@ -175,48 +162,66 @@ def get_target_count(root_path):
     level1 = [d for d in root.iterdir() if d.is_dir()]
     prefixes = {d.name.split("_")[0] for d in level1}
 
-    if len(prefixes) > 1: # various classes
-        class_dirs = level1
-        result = {}
-        counts = {}
-        for cls in class_dirs:
-            images = get_directory(cls)
-            class_counts = count_images(images)
-            counts[cls.name] = class_counts
-            print("CUNTSSSS ", counts)
-            result[cls.name] = max(counts.values()) if counts else 0
-        return result, images, counts
+    # MULTI-CLASS SCENARIO (Apple + Grape)
+    if len(prefixes) > 1:
+        target_count = {}
+        class_counts = {}
 
-    class_name = prefixes.pop() # 1 class name
+        for cls in level1:
+            images = get_directory(cls)
+            counts = count_images(images)
+
+            class_counts[cls.name] = counts
+            target_count[cls.name] = max(counts.values())
+
+        return target_count, class_counts
+
+    # SINGLE-CLASS SCENARIO (Apple only)
+    class_name = prefixes.pop()
     images = get_directory(root)
     counts = count_images(images)
-    print("CUNTSSSS ", counts)
-    result = {class_name: max(counts.values()) if counts else 0}
-    return result, images, counts
 
+    target_count = {class_name: max(counts.values())}
+    return target_count, {class_name: counts}
 
 def main():
-    parser = argparse.ArgumentParser(description="Data Augmentation in directory and transformation on a single image")
-    parser.add_argument("path", type=str, help="Path to directory to grow or the image to transform")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path", type=str)
     args = parser.parse_args()
 
     if os.path.isdir(args.path):
-        target_count, images, counts = get_target_count(args.path)
-        print("TARGET COUNT: ", target_count)
-        for root, dirs, files in os.walk(args.path):
-            print("DIRRR: ", root, dirs)
-            image_paths = [os.path.join(root, f) for f in files if f.lower().endswith((".jpg", ".jpeg", ".png"))]
-            if len(image_paths) == 0 :
-                continue
-            print("\nProcessing directory:", root)
-            data_augmentation(root, target_count, images, counts)
+        target_count, class_counts = get_target_count(args.path)
+        print("TARGET COUNT:", target_count)
 
+        # Loop over each class (Apple, Grape)
+        for class_name, diseases in class_counts.items():
+            if (Path(args.path).name == class_name):
+                class_dir = args.path
+            else:
+                class_dir = os.path.join(args.path, class_name)
+
+            # Loop over each disease folder inside this class
+            for disease_name in diseases.keys():
+                disease_dir = os.path.join(class_dir, disease_name)
+                print("DIRRRRRRRR args.path:", Path(args.path).name)
+                print("DIRRRRRRRR class_dir: ", class_dir)
+                print("DIRRRRRRRR class_name: ", class_name)
+                print("DIRRRRRRRR disease_name:", disease_name)
+                print("DIRRRRRRRR disease_dir:", disease_dir)
+
+                images = get_directory(disease_dir)
+                num_images = diseases# all disease counts for this class
+
+                print("\nProcessing:", disease_dir)
+
+                data_augmentation(
+                    disease_dir,
+                    target_count,
+                    images,# images only for this disease
+                    num_images   # disease counters for this class
+                )
     else:
         image = cv2.imread(args.path)
-        if image is None:
-            print("Image not found:", image)
-            return
-
         augmentations = get_augmentations(image)
         display_images(image, augmentations.keys(), augmentations.values())
 
