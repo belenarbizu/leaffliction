@@ -93,15 +93,15 @@ def get_augmentations(image):
     }
 
 
-def data_augmentation(dir, target_count, images, num_images):
-    class_name = Path(dir).name              # e.g. "Apple_healthy"
-    pure_name = class_name.split("_")[0]     # "Apple"
-
-    # target count for this class
+def data_augmentation(dir, target_count, images, diseases):
+    """
+    Augment images in subdirectories to match the maximum image count.
+    Each subdirectory with fewer images will be augmented with transformed versions.
+    """
+    class_name = Path(dir).name
+    pure_name = class_name.split("_")[0]
     target_count = target_count[pure_name]
-
-    # num_images is ALWAYS a dict: {"Apple_healthy": 1640, ...}
-    count = num_images[class_name]
+    count = diseases[class_name]
 
     augmented_directory = "augmented_directory/"
     os.makedirs(augmented_directory, exist_ok=True)
@@ -126,7 +126,7 @@ def data_augmentation(dir, target_count, images, num_images):
     if needed_images <= 0:
         return
 
-    # Augmentation
+    # Generate augmented images
     for img in images:
         if needed_images <= 0:
             break
@@ -184,6 +184,7 @@ def get_target_count(root_path):
     target_count = {class_name: max(counts.values())}
     return target_count, {class_name: counts}
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path", type=str)
@@ -203,22 +204,13 @@ def main():
             # Loop over each disease folder inside this class
             for disease_name in diseases.keys():
                 disease_dir = os.path.join(class_dir, disease_name)
-                print("DIRRRRRRRR args.path:", Path(args.path).name)
-                print("DIRRRRRRRR class_dir: ", class_dir)
-                print("DIRRRRRRRR class_name: ", class_name)
-                print("DIRRRRRRRR disease_name:", disease_name)
-                print("DIRRRRRRRR disease_dir:", disease_dir)
-
                 images = get_directory(disease_dir)
-                num_images = diseases# all disease counts for this class
-
-                print("\nProcessing:", disease_dir)
 
                 data_augmentation(
                     disease_dir,
                     target_count,
-                    images,# images only for this disease
-                    num_images   # disease counters for this class
+                    images,
+                    diseases
                 )
     else:
         image = cv2.imread(args.path)
