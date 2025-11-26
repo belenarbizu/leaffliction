@@ -41,7 +41,7 @@ def predict_image(image_path, model_path, class_names):
     model = load_model(model_path)
     img = image.load_img(image_path, target_size=(128, 128))
     img_array = image.img_to_array(img)
-    img_array = img_array / 255.0  # Normalize the image
+    _ = img_array / 255.0  # Normalize the image
     img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
 
     predictions = model.predict(img_array, verbose=0)

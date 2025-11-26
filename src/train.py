@@ -23,10 +23,18 @@ def split_dataset(data_dir, split_ratio):
     """
     Split the dataset into training and validation sets based on the given ratio.
     """
-    train_df, val_df = tf.keras.preprocessing.image_dataset_from_directory(
+    train_df = tf.keras.preprocessing.image_dataset_from_directory(
         data_dir,
         validation_split=1 - split_ratio,
-        subset="both",
+        subset="training",
+        seed=42,
+        image_size=(128, 128)
+    )
+
+    val_df = tf.keras.preprocessing.image_dataset_from_directory(
+        data_dir,
+        validation_split=1 - split_ratio,
+        subset="validation",
         seed=42,
         image_size=(128, 128)
     )
@@ -55,7 +63,7 @@ def train(train_data, val_data):
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
-    model.fit(train_data, validation_data=val_data, epochs=3)
+    model.fit(train_data, validation_data=val_data, epochs=4)
     return model
 
 
