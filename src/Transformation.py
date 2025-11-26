@@ -6,49 +6,104 @@ import rembg
 import os
 from utils import get_directory
 import matplotlib.pyplot as plt
+import numpy as np
 
 
-def check_path(file_path):
+def validate_source_directory(src):
     """
-    Check if the given file path exists and is a file. Load and return the image if valid.
+    Validate source directory: must exist and contain subdirectories with photos.
     """
-    path = Path(file_path)
-    if not path.exists():
-        print(f"Error: The path {path} does not exist.")
+    src_path = Path(src)
+    if not src_path.exists():
+        print(f"Error: Source directory {src} does not exist.")
         exit(1)
-    if path.is_dir():
-        print(f"Error: The path {path} is a directory, expected a file.")
+    if not src_path.is_dir():
+        print(f"Error: {src} is not a directory.")
         exit(1)
-    if path.is_file():
-        image = cv2.imread(str(path))
-        if image is None:
-            print(f"Error: Unable to load image at {path}")
+
+    # Check if subdirectories contain images
+    has_images = False
+    for subdir in src_path.iterdir():
+        if subdir.is_dir():
+            images = list(subdir.glob('*.jpg')) + list(subdir.glob('*.jpeg')) + list(subdir.glob('*.png'))
+            if images:
+                has_images = True
+                break
+
+    if not has_images:
+        print(f"Error: No images found in subdirectories of {src}")
+        exit(1)
+
+    return src_path
+
+
+def validate_source_file(src):
+    """
+    Validate source file: must exist and be a valid image file.
+    """
+    src_path = Path(src)
+    if not src_path.exists():
+        print(f"Error: Source file {src} does not exist.")
+        exit(1)
+    if not src_path.is_file():
+        print(f"Error: {src} is not a file.")
+        exit(1)
+
+    image = cv2.imread(str(src_path))
+    if image is None:
+        print(f"Error: Unable to load image at {src}")
+        exit(1)
+
+    return src_path, image
+
+
+def validate_destination_directory(dst, create=True):
+    """
+    Validate destination directory: must be a directory (or create if create=True).
+    """
+    dst_path = Path(dst)
+    if dst_path.exists() and not dst_path.is_dir():
+        print(f"Error: Destination {dst} exists but is not a directory.")
+        exit(1)
+
+    if not dst_path.exists() and create:
+        os.makedirs(dst_path, exist_ok=True)
+        print(f"Created destination directory: {dst}")
+
+    return dst_path
+
+
+def validate_inputs(src, dst):
+    """
+    Main validation logic:
+    - If src is directory: check it exists and has subdirectories with photos, create dst if needed
+    - If src is file: check it exists as valid image, dst must be valid directory
+    """
+    src_path = Path(src)
+    
+    # Case 1: src is a directory
+    if src_path.is_dir():
+        src_path = validate_source_directory(src)
+        if dst is None:
+            print("Error: Destination directory required for batch processing.")
             exit(1)
-        return image
+        dst_path = validate_destination_directory(dst, create=True)
+        return 'directory', src_path, dst_path
+    
+    # Case 2: src is a file
+    else:
+        src_path, image = validate_source_file(src)
+        if dst is None:
+            print("Error: Destination directory required for single image processing.")
+            exit(1)
+        dst_path = validate_destination_directory(dst, create=True)
+        return 'file', src_path, dst_path, image
 
 
-def check_directory(dir_path):
-    """
-    Check if the given directory path exists. Load and return all images in the directory.
-    """
-    path = Path(dir_path)
-    if not path.exists():
-        print(f"Error: The directory {dir_path} does not exist.")
-        exit(1)
-    images = []
-    files_names = []
-    for img_file in path.glob('*'):
-        image = cv2.imread(str(img_file))
-        if image is not None:
-            images.append(image)
-            files_names.append(img_file.name.removesuffix(".JPG"))
-    if not images:
-        print(f"Error: No valid images found in directory {dir_path}")
-        return
-    return images, files_names
+# TRANSFORMATION FUNCTIONS
 
 
-def gaussian_blur(image, plot=True, destination=None, file_name=None):
+def gaussian_blur(image, mask=None, plot=True, destination=None, file_name=None):
     """
     Apply Gaussian blur to the image.
     """
@@ -59,16 +114,17 @@ def gaussian_blur(image, plot=True, destination=None, file_name=None):
     blurred_image = pcv.gaussian_blur(img=binary, ksize=(5, 5), sigma_x=0, sigma_y=None)
     if plot:
         pcv.plot_image(blurred_image, title="Gaussian Blurred Image")
-    try:
-        if destination and file_name:
+    if destination and file_name:
+        try:
             save_path = Path(destination) / f"{file_name}_gaussian_blur.JPG"
             os.makedirs(destination, exist_ok=True)
             cv2.imwrite(str(save_path), blurred_image)
-    except Exception as e:
-        print(f"Error saving Gaussian blurred image: {e}")
+        except Exception as e:
+            print(f"Error saving Gaussian blurred image: {e}")
+    return blurred_image
 
 
-def mask(image, plot=True, destination=None, file_name=None):
+def mask(image, mask=None, plot=True, destination=None, file_name=None):
     """
     Apply masking to the image.
     """
@@ -77,17 +133,17 @@ def mask(image, plot=True, destination=None, file_name=None):
     masked_image = pcv.apply_mask(image, mask=mask_binary, mask_color="white")
     if plot:
         pcv.plot_image(masked_image, title="Masked Image")
-    try:
-        if destination and file_name:
+    if destination and file_name:
+        try:
             save_path = Path(destination) / f"{file_name}_masked.JPG"
             os.makedirs(destination, exist_ok=True)
             cv2.imwrite(str(save_path), masked_image)
-    except Exception as e:
-        print(f"Error saving masked image: {e}")
+        except Exception as e:
+            print(f"Error saving masked image: {e}")
     return masked_image
 
 
-def roi_object(image, masked, plot=True, destination=None, file_name=None):
+def roi_object(image, mask=None, plot=True, destination=None, file_name=None):
     """
     Define region of interest on the image.
     """
@@ -108,150 +164,286 @@ def roi_object(image, masked, plot=True, destination=None, file_name=None):
     roi_image[kept_mask != 0] = (0, 255, 0)
     if plot:
         pcv.plot_image(roi_image, title="ROI Image")
-    try:
-        if destination and file_name:
+    if destination and file_name:
+        try:
             save_path = Path(destination) / f"{file_name}_roi.JPG"
             os.makedirs(destination, exist_ok=True)
             cv2.imwrite(str(save_path), roi_image)
-    except Exception as e:
-        print(f"Error saving ROI image: {e}")
+        except Exception as e:
+            print(f"Error saving ROI image: {e}")
     return kept_mask
 
 
-def analyze_image(image, mask, plot=True, destination=None, file_name=None):
+def analyze_image(image, mask=None, plot=True, destination=None, file_name=None):
     """
     Analyze the image using the given mask.
     """
+    # before had mask here i deleted it analyze = pcv.analyze.size(img=image, labeled_mask=mask)
     analyze = pcv.analyze.size(img=image, labeled_mask=mask)
     if plot:
         pcv.plot_image(analyze, title="Analyzed Image")
-    try:
-        if destination and file_name:
+    if destination and file_name:
+        try:
             save_path = Path(destination) / f"{file_name}_analyzed.JPG"
             os.makedirs(destination, exist_ok=True)
             cv2.imwrite(str(save_path), analyze)
-    except Exception as e:
-        print(f"Error saving analyzed image: {e}")
+        except Exception as e:
+            print(f"Error saving analyzed image: {e}")
 
 
-def edges_image(image, mask, plot=True, destination=None, file_name=None):
+def edges_image(image, mask=None, plot=True, destination=None, file_name=None):
+    """
+    Find edges in the image.
+    """
+    if mask is None:
+        mask = image
     edges = cv2.Canny(mask, 150, 200)
     if plot:
         pcv.plot_image(edges)
+    if destination and file_name:
+        try:
+            save_path = Path(destination) / f"{file_name}_edges.JPG"
+            os.makedirs(destination, exist_ok=True)
+            cv2.imwrite(str(save_path), edges)
+        except Exception as e:
+            print(f"Error saving edges image: {e}")
     return edges
 
 
-def negative_image(image, mask, plot=True, destination=None, file_name=None):
+def negative_image(image, mask=None, plot=True, destination=None, file_name=None):
+    """
+    Invert the image colors (negative).
+    """
     negative = cv2.bitwise_not(image)
     if plot:
         pcv.plot_image(negative)
-    return image 
+    if destination and file_name:
+        try:
+            save_path = Path(destination) / f"{file_name}_negative.JPG"
+            os.makedirs(destination, exist_ok=True)
+            cv2.imwrite(str(save_path), negative)
+        except Exception as e:
+            print(f"Error saving negative image: {e}")
+    return negative
 
 
-def transformation_image(source_dir, destination_dir, filter, display=False):
+def get_all_transformations():
     """
-    Apply one or a series of transformations to each of the 
-    original image in a each subdirectory.
+    Return all 6 transformation functions.
     """
-    valid_extensions = {'.jpg', '.jpeg', '.png'}
-    class_name = os.path.basename(os.path.normpath(source_dir))
-    os.makedirs(destination_dir, exist_ok=True)
-    images = get_directory(source_dir)
+    return {
+        'gaussian': gaussian_blur,
+        'mask': mask,
+        'roi': roi_object,
+        'analyze': analyze_image,
+        'edges': edges_image,
+        'negative': negative_image,
+    }
+
+
+def process_directory_with_filter(src_path, dst_path, filter_name):
+    """
+    Apply ONE specific filter to all images in all subdirectories.
+    """
+    transformations = get_all_transformations()
     
-    # apply one filter to each of the original images
-    if display == False:
-        root = Path(source_dir)
-        level1 = [d for d in root.iterdir() if d.is_dir()]
-        prefixis = {d.name.split("_")[0] for d in level1}
+    if filter_name not in transformations:
+        print(f"Error: Unknown filter '{filter_name}'")
+        return
+    
+    filter_func = transformations[filter_name]
+    
+    for subdir in src_path.iterdir():
+        if not subdir.is_dir():
+            continue
         
-        if len(prefixis) > 1:
-            for cls in level1:
-                images = get_directory(cls)
-                # Copy originals
-                for img in images:
-                    base_name = os.path.basename(str(img))
-                    image = cv2.imread(str(img))
-                    transformed_image = filter(image)
-                    out_path = os.path.join(
-                        destination_dir,
-                        class_name,
-                        base_name
-                    )
-                    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-                    cv2.imwrite(out_path, transformed_image)
-                
-                for img in images:
-                    base_name = Path(img).stem
-                    ext = Path(img).suffix
-                    transformed_image = filter(image)
-                    out_path = os.path.join(
-                        destination_dir,
-                        class_name,
-                        f"{base_name}_{filter}{ext}"
-                    )
-                    cv2.imwrite(out_path, transformed_image)
+        subdir_name = subdir.name
+        image_files = list(subdir.glob('*.jpg')) + list(subdir.glob('*.jpeg')) + list(subdir.glob('*.png'))
+        
+        for img_file in image_files:
+            image = cv2.imread(str(img_file))
+            if image is None:
+                continue
+            
+            base_name = img_file.stem
+            ext = img_file.suffix
+            
+            # Apply filter
+            transformed = filter_func(image, plot=False)
+            
+            # Save transformed image
+            out_path = dst_path / subdir_name / f"{base_name}_{filter_name}{ext}"
+            os.makedirs(out_path.parent, exist_ok=True)
+            cv2.imwrite(str(out_path), transformed)
+            print(f"Saved: {out_path}")
 
-    # display the transformations of 1 image
+
+def process_directory_all_filters(src_path, dst_path):
+    """
+    Apply ALL 6 filters to all images in all subdirectories.
+    """
+    transformations = get_all_transformations()
+    
+    for subdir in src_path.iterdir():
+        if not subdir.is_dir():
+            continue
+        
+        subdir_name = subdir.name
+        image_files = list(subdir.glob('*.jpg')) + list(subdir.glob('*.jpeg')) + list(subdir.glob('*.png'))
+        
+        for img_file in image_files:
+            image = cv2.imread(str(img_file))
+            if image is None:
+                continue
+            
+            base_name = img_file.stem
+            ext = img_file.suffix
+            
+            for filter_name, filter_func in transformations.items():
+                try:
+                    transformed = filter_func(image, plot=False)
+                    out_path = dst_path / subdir_name / f"{base_name}_{filter_name}{ext}"
+                    os.makedirs(out_path.parent, exist_ok=True)
+                    cv2.imwrite(str(out_path), transformed)
+                    print(f"Saved: {out_path}")
+                except Exception as e:
+                    print(f"Error processing {img_file} with {filter_name}: {e}")
+
+
+def process_single_image_with_filter(image, filter_name, dst_path, file_name):
+    """
+    Apply ONE specific filter to a single image and display original + transformed.
+    """
+    transformations = get_all_transformations()
+
+    if filter_name not in transformations:
+        print(f"Error: Unknown filter '{filter_name}'")
+        return
+
+    filter_func = transformations[filter_name]
+    transformed = filter_func(image, plot=False)
+
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.title("Original Image")
+    plt.axis('off')
+
+    plt.subplot(1, 2, 2)
+    if len(transformed.shape) == 2:
+        plt.imshow(transformed, cmap='gray')
     else:
-        if (source_dir).lower().endwith(valid_extensions):
-            transformed_image = filter(source_dir)
-            plt.figure(figsize=(10, 10))
-            plt.subplot(1, 2, 1)
-            plt.imshow(cv2.cvtColor(source_dir, cv2.COLOR_BGR2RGB))
-            plt.title("Original Image")
-            plt.subplot(1, 2, 2)
-            plt.imshow(cv2.cvtColor(transformed_image, cv2.COLOR_BGR2RGB))
-            plt.title(f"Transformed Image - {filter}")
-            plt.tight_layout()
-            plt.show()
+        plt.imshow(cv2.cvtColor(transformed, cv2.COLOR_BGR2RGB))
+    plt.title(f"Transformed - {filter_name}")
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+    ext = '.JPG'
+    out_path = dst_path / f"{file_name}_comparison_{filter_name}{ext}"
+    os.makedirs(out_path.parent, exist_ok=True)
+
+    if len(transformed.shape) == 2:
+        transformed_bgr = cv2.cvtColor(transformed, cv2.COLOR_GRAY2BGR)
+    else:
+        transformed_bgr = transformed
+
+    comparison = cv2.hconcat([image, transformed_bgr])
+    cv2.imwrite(str(out_path), comparison)
+    print(f"Saved comparison: {out_path}")
+
+
+def process_single_image_all_filters(image, dst_path, file_name):
+    """
+    Apply ALL 6 filters to a single image and display original + all 6 transformations in grid.
+    """
+    transformations = get_all_transformations()
+
+    results = {'original': image}
+    masked_image = mask(image)
+    for filter_name, filter_func in transformations.items():
+        try:
+            results[filter_name] = filter_func(image, masked_image, plot=False)
+        except Exception as e:
+            print(f"Error applying {filter_name}: {e}")
+
+    # Display in 2x4 grid (1 original + 6 transformations)
+    plt.figure(figsize=(16, 8))
+
+    plot_idx = 1
+    for name in ['original'] + list(transformations.keys()):
+        plt.subplot(2, 4, plot_idx)
+        img_to_show = results[name]
+        if len(img_to_show.shape) == 2:
+            plt.imshow(img_to_show, cmap='gray')
+        else:
+            plt.imshow(cv2.cvtColor(img_to_show, cv2.COLOR_BGR2RGB))
+        plt.title(name.capitalize())
+        plt.axis('off')
+        plot_idx += 1
+
+    plt.tight_layout()
+    plt.show()
+
+    ext = '.JPG'
+    out_path = dst_path / f"{file_name}_all_transformations{ext}"
+    os.makedirs(out_path.parent, exist_ok=True)
+
+    grid_images = [results['original']]
+    for filter_name in transformations.keys():
+        img = results[filter_name]
+        if len(img.shape) == 2:
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        grid_images.append(img)
+
+    row1 = cv2.hconcat(grid_images[:4])
+    row2 = cv2.hconcat(grid_images[4:])
+    grid = cv2.vconcat([row1, row2])
+    cv2.imwrite(str(out_path), grid)
+    print(f"Saved all transformations grid: {out_path}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Display image transformations.")
-    parser.add_argument("path", type=str, help="File path image to be transformed.", default=None, nargs='?')
-    parser.add_argument("-src", "--source", type=str, help="Directory source of the image.", default=None, nargs='?')
-    parser.add_argument("-dst", "--destination", type=str, help="Directory destination to save transformed images.", default=None, nargs='?')
-    parser.add_argument("-f", "--filter", action="store_true", help="Apply specific filter to the images in directory.")
-    parser.add_argument("-d", "--display", action="store_true", help="Display the transformed images.")
-    parser.add_argument("-gaussian", "--gaussian", action="store_true", help="Apply Gaussian blur to the image.")
-    parser.add_argument("-mask", "--mask", action="store_true", help="Apply masking to the image.")
-    parser.add_argument("-roi", "--roi", action="store_true", help="Define region of interest on the image.")
-    parser.add_argument("-analyze", "--analyze", action="store_true", help="Analyze the image.")
-    parser.add_argument("-invert", "--invert", action="store_true", help="Find the edges in the image.")
-    parser.add_argument("-negative", "--negative", action="store_true", help="Invert the image colors.")
+    parser = argparse.ArgumentParser(description="Apply transformations to images.")
+    parser.add_argument("-src", "--source", type=str, help="Source: directory (with subdirectories) or image file", required=True)
+    parser.add_argument("-dst", "--destination", type=str, help="Destination directory (required)", required=True)
+    parser.add_argument("-f", "--filter", type=str, default=None, 
+                        help="Apply specific filter (gaussian, mask, roi, analyze, edges, negative). If not provided, apply all 6.")
     args = parser.parse_args()
 
-    if (args.path is None and args.source is None) or (args.path is not None and args.source is not None) or (args.path is not None and args.destination is not None):
-        print("Error: Please provide either a file path or a source directory.")
-        exit(1)
-    if (args.source is not None and args.destination is None) or (args.source is None and args.destination is not None):
-        print("Error: Please provide both source and destination directories for batch processing.")
-        exit(1)
+    src = args.source
+    dst = args.destination
+    filter_name = args.filter
 
-    if args.path:
-        image = check_path(args.path)
-        gaussian_blur(image)
-        masked_image = mask(image)
-        negative_image(image, masked_image)
-        edges_image(image, masked_image)
-        roi_mask = roi_object(image, masked_image)
-        analyze_image(image, roi_mask)
-    if args.source and args.destination:
-        transformation_image(args.source, args.destination, filter=args.filter, display=args.display)
-        images, files_names = check_directory(args.source)
-        for img, file_name in zip(images, files_names):
-            if args.gaussian:
-                gaussian_blur(img, plot=False, destination=args.destination, file_name=file_name)
-            if args.mask:
-                masked_image = mask(img, plot=False, destination=args.destination, file_name=file_name)
-            if args.roi:
-                masked_image = mask(img, plot=False,)
-                roi_mask = roi_object(img, masked_image, plot=False, destination=args.destination, file_name=file_name)
-            if args.analyze:
-                masked_image = mask(img, plot=False,)
-                roi_mask = roi_object(img, masked_image, plot=False)
-                analyze_image(img, roi_mask, plot=False, destination=args.destination, file_name=file_name)
-            
+    src_path = Path(src)
+
+    # src is a DIRECTORY
+    if src_path.is_dir():
+        print(f"Mode: Batch processing directory")
+        src_path = validate_source_directory(src)
+        dst_path = validate_destination_directory(dst, create=True)
+
+        if filter_name:
+            print(f"Applying filter: {filter_name} to all images in subdirectories...")
+            process_directory_with_filter(src_path, dst_path, filter_name)
+        else:
+            print(f"Applying all 6 filters to all images in subdirectories...")
+            process_directory_all_filters(src_path, dst_path)
+
+    # src is a FILE
+    else:
+        print(f"Mode: Single image processing")
+        src_path, image = validate_source_file(src)
+        dst_path = validate_destination_directory(dst, create=True)
+        file_name = src_path.stem
+
+        if filter_name:
+            print(f"Applying filter: {filter_name} to single image...")
+            process_single_image_with_filter(image, filter_name, dst_path, file_name)
+        else:
+            print(f"Applying all 6 filters to single image and creating grid...")
+            process_single_image_all_filters(image, dst_path, file_name)
+
 
 if __name__ == "__main__":
     main()
