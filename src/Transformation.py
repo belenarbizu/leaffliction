@@ -102,7 +102,6 @@ def validate_inputs(src, dst):
 
 # TRANSFORMATION FUNCTIONS
 
-
 def gaussian_blur(image, mask=None, plot=True, destination=None, file_name=None):
     """
     Apply Gaussian blur to the image.
@@ -178,7 +177,7 @@ def analyze_image(image, mask=None, plot=True, destination=None, file_name=None)
     """
     Analyze the image using the given mask.
     """
-    # before had mask here i deleted it analyze = pcv.analyze.size(img=image, labeled_mask=mask)
+    mask = roi_object(image, plot=False)
     analyze = pcv.analyze.size(img=image, labeled_mask=mask)
     if plot:
         pcv.plot_image(analyze, title="Analyzed Image")
@@ -235,9 +234,9 @@ def get_all_transformations():
         'gaussian': gaussian_blur,
         'mask': mask,
         'roi': roi_object,
+        'negative': negative_image,
         'analyze': analyze_image,
         'edges': edges_image,
-        'negative': negative_image,
     }
 
 
@@ -321,7 +320,8 @@ def process_single_image_with_filter(image, filter_name, dst_path, file_name):
         return
 
     filter_func = transformations[filter_name]
-    transformed = filter_func(image, plot=False)
+    masked_image = mask(image, plot=False)
+    transformed = filter_func(image, masked_image, plot=False)
 
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
@@ -360,7 +360,7 @@ def process_single_image_all_filters(image, dst_path, file_name):
     transformations = get_all_transformations()
 
     results = {'original': image}
-    masked_image = mask(image)
+    masked_image = mask(image, plot=False)
     for filter_name, filter_func in transformations.items():
         try:
             results[filter_name] = filter_func(image, masked_image, plot=False)
@@ -373,7 +373,10 @@ def process_single_image_all_filters(image, dst_path, file_name):
     plot_idx = 1
     for name in ['original'] + list(transformations.keys()):
         plt.subplot(2, 4, plot_idx)
+        print("results: ", results[name])
         img_to_show = results[name]
+        if img_to_show is None:
+            continue
         if len(img_to_show.shape) == 2:
             plt.imshow(img_to_show, cmap='gray')
         else:
