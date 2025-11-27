@@ -13,3 +13,11 @@ rm -rf venv
 
 execute Augmentation:
 python3 src/Augmentation.py "../leaves/images/Apple_Black_rot/image (23).JPG"
+
+execute Transformation:
+image input:
+python3 ./src/Transformation.py -src "../leaves/images/Apple/Apple_Black_rot/image (110).JPG" -dst "new" 
+python3 ./src/Transformation.py -src "../leaves/images/Apple/Apple_Black_rot/image (110).JPG" -f negative
+
+directory input:
+python3 ./src/Transformation.py -src "../leaves/images/Apple/Apple_Black_rot"

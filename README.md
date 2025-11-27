@@ -42,3 +42,9 @@ python3 ./src/Augmentation.py "images/leaves/"
 ---
 
 ## 3. Image Transformation
+
+![transformations](computed_images/advanced_transformations.jpg)
+
+
+**There are 4 possible execution ways:** 
+![transformations](computed_images/logic_trasformation.png)
