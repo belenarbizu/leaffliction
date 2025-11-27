@@ -178,6 +178,7 @@ def process_directory_all_filters(src_path, dst_path):
                 out_path = dst_path / rel_path.parent / f"{base_name}_{filter_name}{ext}"
                 os.makedirs(out_path.parent, exist_ok=True)
                 cv2.imwrite(str(out_path), transformed)
+                print(f"Processed {img_file} with {filter_name}")
             except Exception as e:
                 print(f"Error processing {img_file} with {filter_name}: {e}")
     print(f"Saved originals + all 6 transformations in {dst_path}")
