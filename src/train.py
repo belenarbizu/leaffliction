@@ -21,9 +21,13 @@ def check_dir(directory):
         print("The specified directory does not exist or is not a directory.")
         exit(1)
 
-    subdirs = [os.path.join(directory, d) for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))]
+    subdirs = []
+    for d in os.listdir(directory):
+        p = os.path.join(directory, d)
+        if os.path.isdir(p):
+            subdirs.append(p)
     if len(subdirs) < 2:
-        print("The directory must contain at least two subdirectories for classification.")
+        print("The directory must contain at least two subdirectories.")
         exit(1)
 
     model_name = path.name.split("/")
@@ -32,7 +36,8 @@ def check_dir(directory):
 
 def split_dataset(data_dir, split_ratio):
     """
-    Split the dataset into training and validation sets based on the given ratio.
+    Split the dataset into training and validation sets
+    based on the given ratio.
     """
     train_df, val_df = tf.keras.preprocessing.image_dataset_from_directory(
         data_dir,
@@ -47,7 +52,8 @@ def split_dataset(data_dir, split_ratio):
 
 def train(train_data, val_data):
     """
-    Train a simple CNN model on the training data and validate on the validation data.
+    Train a simple CNN model on the training data
+    and validate on the validation data.
     """
     model = models.Sequential([
         layers.Rescaling(1.0 / 255),
@@ -76,19 +82,34 @@ def create_zip(model, class_names, model_name):
     Save the model and class names, then create a zip file containing them.
     """
     model.save(f"model/{model_name}_model.h5")
-    pd.DataFrame({'class_names': class_names}).to_csv(f"model/{model_name}_class_names.csv", index=False)
+    pd.DataFrame({
+        'class_names': class_names
+    }).to_csv(f"model/{model_name}_class_names.csv", index=False)
 
     with zipfile.ZipFile(f"{model_name}_model.zip", "w") as zipf:
         zipf.write(f"model/{model_name}_model.h5")
         zipf.write(f"model/{model_name}_class_names.csv")
 
-    os.system(f"sha1sum {model_name}_model.zip > model/sha1sum_{model_name}_model.txt")
+    os.system(f"sha1sum {model_name}_model.zip > model/{model_name}_model.txt")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Split dataset and train model.")
-    parser.add_argument("data_dir", type=str, help="Directory containing the dataset.", default=None)
-    parser.add_argument("-split", "--split", type=float, help="Ratio to split the dataset", default=0.8)
+    parser = argparse.ArgumentParser(
+        description="Split dataset and train model."
+    )
+    parser.add_argument(
+        "data_dir",
+        type=str,
+        help="Directory containing the dataset.",
+        default=None
+    )
+    parser.add_argument(
+        "-split",
+        "--split",
+        type=float,
+        help="Ratio to split the dataset",
+        default=0.8
+    )
     args = parser.parse_args()
 
     model_name = check_dir(args.data_dir)
