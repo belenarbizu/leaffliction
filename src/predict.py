@@ -14,10 +14,10 @@ def check_path(image_path):
     try:
         path = Path(image_path)
         if not path.exists() or not path.is_file():
-            print(f"Error: The specified path is not a file or does not exist: {image_path}.")
+            print("Error: The specified path is not a file or does not exist.")
             exit(1)
     except Exception as e:
-        print(f"Error: Invalid path provided: {image_path}.")
+        print(f"Error: {e}.")
         exit(1)
 
 
@@ -32,7 +32,8 @@ def open_model(model_zip_path):
     except Exception as e:
         print(f"Error extracting model: {e}")
         exit(1)
-    return f"model/{model_zip_path.split('_model.zip')[0]}_model.h5", f"model/{model_zip_path.split('_model.zip')[0]}_class_names.csv"
+    return f"model/{model_zip_path.split('_model.zip')[0]}_model.h5", \
+        f"model/{model_zip_path.split('_model.zip')[0]}_class_names.csv"
 
 
 def load_class_names(class_names_path):
@@ -63,15 +64,28 @@ def predict_image(image_path, model_path, class_names):
     predictions = model.predict(img_array, verbose=0)
     predicted_class_index = np.argmax(predictions[0])
     confidence = predictions[0][predicted_class_index]
-    predicted_class_name = class_names[predicted_class_index]
+    predicted_class = class_names[predicted_class_index]
 
-    print(f"Predicted class: {predicted_class_name} with confidence {confidence:.2f}")
+    print(f"Predicted class: {predicted_class}. Confidence {confidence:.2f}")
 
 
 def main():
-    argparser = argparse.ArgumentParser(description="Predict using a trained model.")
-    argparser.add_argument(type=str, dest="image", help="Path to the image file to classify.")
-    argparser.add_argument("-m", "--model", required=True, type=str, dest="model", help="Path to the model zip file.")
+    argparser = argparse.ArgumentParser(
+        description="Predict using a trained model."
+    )
+    argparser.add_argument(
+        type=str,
+        dest="image",
+        help="Path to the image file to classify."
+    )
+    argparser.add_argument(
+        "-m",
+        "--model",
+        required=True,
+        type=str,
+        dest="model",
+        help="Path to the model zip file."
+    )
     args = argparser.parse_args()
 
     check_path(args.image)
