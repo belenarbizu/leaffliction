@@ -13,8 +13,17 @@ def gaussian_blur(image, mask=None, plot=True, destination=None, file_name=None)
     # convert to grayscale using HSV channel 's'
     gray = pcv.rgb2gray_hsv(rgb_img=image, channel="s")
     # convert image to binary (white or black) using a threshold value of 60
-    binary = pcv.threshold.binary(gray_img=gray, threshold=60, object_type="light")
-    blurred_image = pcv.gaussian_blur(img=binary, ksize=(5, 5), sigma_x=0, sigma_y=None)
+    binary = pcv.threshold.binary(
+        gray_img=gray,
+        threshold=60,
+        object_type="light"
+    )
+    blurred_image = pcv.gaussian_blur(
+        img=binary,
+        ksize=(5, 5),
+        sigma_x=0,
+        sigma_y=None
+    )
     if plot:
         pcv.plot_image(blurred_image, title="Gaussian Blurred Image")
     if destination and file_name:
@@ -54,12 +63,22 @@ def roi_object(image, mask=None, plot=True, destination=None, file_name=None):
     image_without_bg = rembg.remove(image)
     # convert to grayscale using hsv channel 's'
     l_grayscale = pcv.rgb2gray_hsv(image_without_bg, channel='s')
-    # create binary image using threshold. the pixels above the threshold are set to white
-    l_thresh = pcv.threshold.binary(gray_img=l_grayscale, threshold=85, object_type='light')
-    # fill small objects. eliminate objects smaller than 200 pixels to reduce noise
+    # create binary image. the pixels > the threshold are set to white
+    l_thresh = pcv.threshold.binary(
+        gray_img=l_grayscale,
+        threshold=85,
+        object_type='light'
+    )
+    # fill small objects. eliminate objects < 200 pixels to reduce noise
     filled = pcv.fill(bin_img=l_thresh, size=200)
     # define ROI
-    roi = pcv.roi.rectangle(img=image, x=0, y=0, h=image.shape[0], w=image.shape[1])
+    roi = pcv.roi.rectangle(
+        img=image,
+        x=0,
+        y=0,
+        h=image.shape[0],
+        w=image.shape[1]
+    )
     # filter the filled image using the ROI
     kept_mask = pcv.roi.filter(mask=filled, roi=roi, roi_type='partial')
     roi_image = image.copy()
@@ -129,4 +148,3 @@ def negative_image(image, mask=None, plot=True, destination=None, file_name=None
         except Exception as e:
             print(f"Error saving negative image: {e}")
     return negative
-
