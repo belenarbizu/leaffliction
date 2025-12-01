@@ -148,9 +148,8 @@ def process_directory_all_filters(src_path, dst_path):
     """
     Apply ALL 6 filters to all images found recursively in the directory tree.
     Copies original images to destination first, then adds all 6 transformed versions.
+    Optimized: call functions directly to avoid redundant mask/ROI recomputation.
     """
-    transformations = get_all_transformations()
-
     image_files = collect_image_files(src_path)
     print(f"Found {len(image_files)} images")
 
@@ -163,6 +162,16 @@ def process_directory_all_filters(src_path, dst_path):
     print(f"Copied {len(image_files)} original images")
 
     print(f"Applying all 6 filters...")
+    filter_names = ['gaussian', 'mask', 'roi', 'negative', 'analyze', 'edges']
+    filter_funcs = {
+        'gaussian': gaussian_blur,
+        'mask': mask,
+        'roi': roi_object,
+        'negative': negative_image,
+        'analyze': analyze_image,
+        'edges': edges_image,
+    }
+    
     for img_file in image_files:
         image = cv2.imread(str(img_file))
         if image is None:
@@ -172,13 +181,20 @@ def process_directory_all_filters(src_path, dst_path):
         base_name = img_file.stem
         ext = img_file.suffix
 
-        for filter_name, filter_func in transformations.items():
+        # Apply each filter directly (no redundant mask calls)
+        for filter_name in filter_names:
+            filter_func = filter_funcs[filter_name]
             try:
                 transformed = filter_func(image, plot=False)
+                
+                # Handle roi_object returning tuple (roi_image, kept_mask)
+                if filter_name == 'roi' and isinstance(transformed, tuple):
+                    transformed = transformed[0]  # keep the colored roi_image
+                
                 out_path = dst_path / rel_path.parent / f"{base_name}_{filter_name}{ext}"
                 os.makedirs(out_path.parent, exist_ok=True)
                 cv2.imwrite(str(out_path), transformed)
-                print(f"Processed {img_file} with {filter_name}")
+                print(f"Processed {img_file.name} with {filter_name}")
             except Exception as e:
                 print(f"Error processing {img_file} with {filter_name}: {e}")
     print(f"Saved originals + all 6 transformations in {dst_path}")
@@ -233,25 +249,59 @@ def process_single_image_all_filters(image, dst_path, file_name):
     """
     Apply ALL 6 filters to a single image and display original + all 6 transformations in grid.
     """
-    transformations = get_all_transformations()
-
     results = {'original': image}
-    masked_image = mask(image, plot=False)
-    for filter_name, filter_func in transformations.items():
-        try:
-            results[filter_name] = filter_func(image, masked_image, plot=False)
-        except Exception as e:
-            print(f"Error applying {filter_name}: {e}")
+    
+    
+    # Call the 6 transformation functions directly (no redundant mask computation)
+    try:
+        results['mask'] = mask(image, mask=None, plot=False)
+    except Exception as e:
+        print(f"Error applying mask: {e}")
+        results['mask'] = None
+    
+    try:
+        results['gaussian'] = gaussian_blur(image, mask=None, plot=False)
+    except Exception as e:
+        print(f"Error applying gaussian_blur: {e}")
+        results['gaussian'] = None
+    
+    try:
+        roi_result = roi_object(image, mask=None, plot=False)
+        if isinstance(roi_result, tuple):
+            results['roi'] = roi_result[0]  # roi_image with green highlight
+        else:
+            results['roi'] = roi_result
+    except Exception as e:
+        print(f"Error applying roi_object: {e}")
+        results['roi'] = None
+    
+    try:
+        results['negative'] = negative_image(image, mask=None, plot=False)
+    except Exception as e:
+        print(f"Error applying negative_image: {e}")
+        results['negative'] = None
+    
+    try:
+        results['analyze'] = analyze_image(image, roi_result[1], plot=False)
+    except Exception as e:
+        print(f"Error applying analyze_image: {e}")
+        results['analyze'] = None
+    
+    try:
+        results['edges'] = edges_image(image, mask=None, plot=False)
+    except Exception as e:
+        print(f"Error applying edges_image: {e}")
+        results['edges'] = None
 
     # Display in 2x4 grid (1 original + 6 transformations)
     plt.figure(figsize=(16, 8))
 
     plot_idx = 1
-    for name in ['original'] + list(transformations.keys()):
+    for name in ['original', 'gaussian', 'mask', 'roi', 'negative', 'analyze', 'edges']:
         plt.subplot(2, 4, plot_idx)
-        # print("results: ", results[name])
         img_to_show = results[name]
         if img_to_show is None:
+            plot_idx += 1
             continue
         if len(img_to_show.shape) == 2:
             plt.imshow(img_to_show, cmap='gray')
@@ -270,7 +320,7 @@ def process_single_image_all_filters(image, dst_path, file_name):
         os.makedirs(out_path.parent, exist_ok=True)
 
         transformed_images = []
-        for name in ['original'] + list(transformations.keys()):
+        for name in ['original', 'gaussian', 'mask', 'roi', 'negative', 'analyze', 'edges']:
             img_to_save = results[name]
             if img_to_save is None:
                 continue

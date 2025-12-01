@@ -74,14 +74,16 @@ def roi_object(image, mask=None, plot=True, destination=None, file_name=None):
             cv2.imwrite(str(save_path), roi_image)
         except Exception as e:
             print(f"Error saving ROI image: {e}")
-    return kept_mask
+    print("ROI", roi_image)
+    print("MASK", kept_mask)
+    return roi_image, kept_mask
 
 
 def analyze_image(image, mask=None, plot=True, destination=None, file_name=None):
     """
     Analyze the image using the given mask.
     """
-    mask = roi_object(image, plot=False)
+    _, mask = roi_object(image, plot=False)
     analyze = pcv.analyze.size(img=image, labeled_mask=mask)
     if plot:
         pcv.plot_image(analyze, title="Analyzed Image")
