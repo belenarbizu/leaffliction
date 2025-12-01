@@ -54,6 +54,7 @@ python3 ./src/Augmentation.py "images/leaves/"
 ## 4. Classification
 
 1. Train
+
 This program allows you to split an image dataset into training/validation sets, train a CNN using TensorFlow, and export the trained model along with the class names inside a .zip file.
 ```bash
 python3 ./src/train.py Grape/
@@ -72,3 +73,21 @@ Training configuration:
  - Metric: accuracy
 
 Once the training is complete, the program saves the model as a .h5 file, save the class names in a .csv file and creates a compressed ZIP file containing both files.
+
+2. Predict
+
+This program allows you to load a previously trained model (exported as a ZIP file), extract its contents, and classify a single image using the saved CNN.
+```bash
+python3 ./src/predict.py "Apple/apple_healthy/image (1).JPG" --model apple_model.zip
+```
+
+The program will:
+Validate the image path.
+Extract the model .h5 file and the class names .csv file from the provided ZIP archive.
+Load the trained model using TensorFlow/Keras.
+Run inference and compute prediction probabilities.
+
+Example output:
+```bash
+Predicted class: apple_healthy. Confidence 0.97
+```
