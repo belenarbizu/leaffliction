@@ -39,7 +39,7 @@ def contrast_image(image, alpha=2.0, beta=-10):
     return contrasted_image
 
 
-def scale_image(image, zoom_factor = 1.5):
+def scale_image(image, zoom_factor=1.5):
     """
     Scale the input image by croping and then resizing back to original.
     """
@@ -96,7 +96,8 @@ def get_augmentations(image):
 def data_augmentation(dir, target_count, images, diseases):
     """
     Augment images in subdirectories to match the maximum image count.
-    Each subdirectory with fewer images will be augmented with transformed versions.
+    Each subdirectory with fewer images
+    will be augmented with transformed versions.
     """
     class_name = Path(dir).name
     pure_name = class_name.split("_")[0]

@@ -48,7 +48,8 @@ def get_directory(directory):
 def count_images(images):
     """
     Count the number of images in each subdirectory.
-    Returns a Counter object with directory names as keys and image counts as values.
+    Returns a Counter object with directory names
+    as keys and image counts as values.
     """
     num_images = Counter()
     for img in images:

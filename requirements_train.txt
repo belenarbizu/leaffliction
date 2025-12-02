@@ -3,3 +3,4 @@ numpy>=1.21.0
 matplotlib==3.9.0
 tensorflow>=2.8.0
 flake8==6.1.0
+pandas==2.3.3

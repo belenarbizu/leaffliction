@@ -15,13 +15,21 @@ def gaussian_blur(image, mask=None, plot=True):
         # convert to grayscale using HSV channel 's'
         gray = pcv.rgb2gray_hsv(rgb_img=image, channel="s")
         # convert image to binary (white or black) using a threshold value of 60
-        binary = pcv.threshold.binary(gray_img=gray, threshold=60, object_type="light")
-        blurred_image = pcv.gaussian_blur(img=binary, ksize=(5, 5), sigma_x=0, sigma_y=None)
+        binary = pcv.threshold.binary(
+            gray_img=gray,
+            threshold=60,
+            object_type="light"
+        )
+        blurred_image = pcv.gaussian_blur(
+            img=binary,
+            ksize=(5, 5),
+            sigma_x=0,
+            sigma_y=None
+        )
         if plot:
             pcv.plot_image(blurred_image, title="Gaussian Blurred Image")
     except Exception as e:
-        print(f"Error creating Gaussian blurred image: {e}")
-        return None
+        print(f"Error saving Gaussian blurred image: {e}")
     return blurred_image
 
 
@@ -50,12 +58,22 @@ def roi_object(image, mask=None, plot=True):
         image_without_bg = rembg.remove(image)
         # convert to grayscale using hsv channel 's'
         l_grayscale = pcv.rgb2gray_hsv(image_without_bg, channel='s')
-        # create binary image using threshold. the pixels above the threshold are set to white
-        l_thresh = pcv.threshold.binary(gray_img=l_grayscale, threshold=85, object_type='light')
-        # fill small objects. eliminate objects smaller than 200 pixels to reduce noise
+        # create binary image. the pixels > the threshold are set to white
+        l_thresh = pcv.threshold.binary(
+            gray_img=l_grayscale,
+            threshold=85,
+            object_type='light'
+        )
+        # fill small objects. eliminate objects < 200 pixels to reduce noise
         filled = pcv.fill(bin_img=l_thresh, size=200)
         # define ROI
-        roi = pcv.roi.rectangle(img=image, x=0, y=0, h=image.shape[0], w=image.shape[1])
+        roi = pcv.roi.rectangle(
+            img=image,
+            x=0,
+            y=0,
+            h=image.shape[0],
+            w=image.shape[1]
+        )
         # filter the filled image using the ROI
         kept_mask = pcv.roi.filter(mask=filled, roi=roi, roi_type='partial')
         roi_image = image.copy()
@@ -67,6 +85,8 @@ def roi_object(image, mask=None, plot=True):
         print(f"Error creating ROI image: {e}")
         return None
     return roi_image, kept_mask
+
+
 
 
 def analyze_image(image, mask=None, plot=True):
@@ -112,35 +132,3 @@ def negative_image(image, mask=None, plot=True):
         return None
     return negative
 
-
-def posterize(image, mask=None, plot=True):
-    """
-    It takes all the millions of original colors and groups them into just a few levels (4).
-    """
-    try:
-        levels = 4
-        shift = 256 // levels
-        posterized_image = (image // shift) * shift
-        if plot:
-            pcv.plot_image(posterized_image, title="Posterized Image")
-    except Exception as e:
-        print(f"Error creating posterized image: {e}")
-        return None
-    return posterized_image
-
-
-def sharpen(image, mask=None, plot=True):
-    """
-    Simple sharpening filter.
-    """
-    try:
-        kernel = np.array([[0,-1,0],
-                        [-1,5,-1],
-                        [0,-1,0]])
-        sharp = cv2.filter2D(image, -1, kernel)
-        if plot:
-            pcv.plot_image(sharp, title="Sharpened")
-    except Exception as e:
-        print(f"Error creating sharpened image: {e}")
-        return None
-    return sharp

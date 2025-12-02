@@ -3,6 +3,17 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from utils import get_directory, count_images
 
+COLORS = [
+    'tan',
+    'peru',
+    'darkgoldenrod',
+    'saddlebrown',
+    'olivedrab',
+    'darkolivegreen',
+    'rosybrown',
+    'grey'
+]
+
 
 def plot_pie(num_images, dir_name):
     """
@@ -10,7 +21,8 @@ def plot_pie(num_images, dir_name):
     """
     plt.figure(figsize=(10, 8))
 
-    plt.pie(num_images.values(), labels=num_images.keys(), autopct='%1.1f%%', startangle=140, colors=['tan', 'peru', 'darkgoldenrod', 'saddlebrown', 'olivedrab', 'darkolivegreen', 'rosybrown', 'grey'])
+    plt.pie(num_images.values(), labels=num_images.keys(), autopct='%1.1f%%',
+            startangle=140, colors=COLORS)
     plt.title(f'Image Distribution: {dir_name}')
     plt.axis('equal')
 
@@ -23,7 +35,7 @@ def plot_bar(num_images, dir_name):
     """
     plt.figure(figsize=(10, 8))
 
-    bars = plt.bar(num_images.keys(), num_images.values(), color=['tan', 'peru', 'darkgoldenrod', 'saddlebrown', 'olivedrab', 'darkolivegreen', 'rosybrown', 'grey'])
+    bars = plt.bar(num_images.keys(), num_images.values(), color=COLORS)
     plt.xlabel('Subdirectories')
     plt.ylabel('Number of Images')
     plt.title(f'Image Distribution: {dir_name}')
@@ -31,7 +43,12 @@ def plot_bar(num_images, dir_name):
 
     for bar in bars:
         yval = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2, yval + 0.5, yval, ha='center', va='bottom')
+        plt.text(
+            bar.get_x() + bar.get_width()/2,
+            yval + 0.5, yval,
+            ha='center',
+            va='bottom'
+        )
 
     plt.tight_layout()
 
@@ -39,8 +56,14 @@ def plot_bar(num_images, dir_name):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Prompt pie chart and bar chart of the directory")
-    parser.add_argument("directory", type=str, help="Directory path to analyze")
+    parser = argparse.ArgumentParser(
+        description="Prompt charts of the directory"
+    )
+    parser.add_argument(
+        "directory",
+        type=str,
+        help="Directory path to analyze"
+    )
     args = parser.parse_args()
 
     if len(vars(args)) != 1:
