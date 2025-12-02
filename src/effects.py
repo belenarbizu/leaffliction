@@ -30,6 +30,7 @@ def gaussian_blur(image, mask=None, plot=True):
             pcv.plot_image(blurred_image, title="Gaussian Blurred Image")
     except Exception as e:
         print(f"Error saving Gaussian blurred image: {e}")
+        return None
     return blurred_image
 
 
@@ -85,8 +86,6 @@ def roi_object(image, mask=None, plot=True):
         print(f"Error creating ROI image: {e}")
         return None
     return roi_image, kept_mask
-
-
 
 
 def analyze_image(image, mask=None, plot=True):
