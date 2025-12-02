@@ -2,7 +2,7 @@ import argparse
 import cv2
 from pathlib import Path
 import os
-from utils import get_directory
+from utils import validate_source_directory, validate_source_file
 import matplotlib.pyplot as plt
 from effects import (
     gaussian_blur,
@@ -14,52 +14,6 @@ from effects import (
     posterize,
     sharpen
 )
-
-
-def validate_source_directory(src):
-    """
-    Validate source directory: must exist and contain subdirectories with photos.
-    """
-    src_path = Path(src)
-    if not src_path.exists():
-        print(f"Error: Source directory {src} does not exist.")
-        exit(1)
-    if not src_path.is_dir():
-        print(f"Error: {src} is not a directory.")
-        exit(1)
-
-    # Recursively search for any images in this directory or subdirectories
-    has_images = False
-    for img_file in src_path.rglob('*'):
-        if img_file.suffix.lower() in ['.jpg', '.jpeg', '.png']:
-            has_images = True
-            break
-
-    if not has_images:
-        print(f"Error: No images found in {src} or its subdirectories")
-        exit(1)
-
-    return src_path
-
-
-def validate_source_file(src):
-    """
-    Validate source file: must exist and be a valid image file.
-    """
-    src_path = Path(src)
-    if not src_path.exists():
-        print(f"Error: Source file {src} does not exist.")
-        exit(1)
-    if not src_path.is_file():
-        print(f"Error: {src} is not a file.")
-        exit(1)
-
-    image = cv2.imread(str(src_path))
-    if image is None:
-        print(f"Error: Unable to load image at {src}")
-        exit(1)
-
-    return src_path, image
 
 
 def validate_destination_directory(dst, create=True, obligatory=True):

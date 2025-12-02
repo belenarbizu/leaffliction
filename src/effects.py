@@ -131,3 +131,35 @@ def negative_image(image, mask=None, plot=True):
         return None
     return negative
 
+
+def posterize(image, mask=None, plot=True):
+    """
+    It takes all the millions of original colors and groups them into just a few levels (4).
+    """
+    try:
+        levels = 4
+        shift = 256 // levels
+        posterized_image = (image // shift) * shift
+        if plot:
+            pcv.plot_image(posterized_image, title="Posterized Image")
+    except Exception as e:
+        print(f"Error creating posterized image: {e}")
+        return None
+    return posterized_image
+
+
+def sharpen(image, mask=None, plot=True):
+    """
+    Simple sharpening filter.
+    """
+    try:
+        kernel = np.array([[0,-1,0],
+                        [-1,5,-1],
+                        [0,-1,0]])
+        sharp = cv2.filter2D(image, -1, kernel)
+        if plot:
+            pcv.plot_image(sharp, title="Sharpened")
+    except Exception as e:
+        print(f"Error creating sharpened image: {e}")
+        return None
+    return sharp
