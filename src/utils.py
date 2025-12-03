@@ -61,7 +61,8 @@ def count_images(images):
 
 def validate_source_directory(src):
     """
-    Validate source directory: must exist and contain subdirectories with photos.
+    Validate source directory: must exist
+    and contain subdirectories with photos.
     """
     src_path = Path(src)
     if not src_path.exists():
@@ -101,3 +102,23 @@ def validate_source_file(src):
         print(f"Error: Unable to load image at {src}")
         exit(1)
     return src_path, image
+
+
+def validate_destination_directory(dst, create=True, obligatory=True):
+    """
+    Validate destination directory:
+    must be a directory (or create if create=True).
+    """
+    if dst is None and obligatory:
+        print("Error: Destination directory is required.")
+        exit(1)
+    dst_path = Path(dst)
+    if dst_path.exists() and not dst_path.is_dir():
+        print(f"Error: Destination {dst} exists but is not a directory.")
+        exit(1)
+
+    if not dst_path.exists() and create:
+        os.makedirs(dst_path, exist_ok=True)
+        print(f"Created destination directory: {dst}")
+
+    return dst_path

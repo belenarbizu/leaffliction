@@ -1,10 +1,8 @@
 
 import cv2
-import os
 import rembg
 import numpy as np
 from plantcv import plantcv as pcv
-from pathlib import Path
 
 
 def gaussian_blur(image, mask=None, plot=True):
@@ -14,7 +12,7 @@ def gaussian_blur(image, mask=None, plot=True):
     try:
         # convert to grayscale using HSV channel 's'
         gray = pcv.rgb2gray_hsv(rgb_img=image, channel="s")
-        # convert image to binary (white or black) using a threshold value of 60
+        # convert image to binary (white or black) using a threshold 60
         binary = pcv.threshold.binary(
             gray_img=gray,
             threshold=60,
@@ -40,8 +38,8 @@ def mask(image, mask=None, plot=True):
     """
     try:
         gray = pcv.rgb2gray_hsv(image, channel='s')
-        mask_binary = pcv.threshold.binary(gray, threshold=85, object_type='light')
-        masked_image = pcv.apply_mask(image, mask=mask_binary, mask_color="white")
+        mask_binary = pcv.threshold.binary(gray, 85, 'light')
+        masked_image = pcv.apply_mask(image, mask_binary, "white")
         if plot:
             pcv.plot_image(masked_image, title="Masked Image")
     except Exception as e:
@@ -134,7 +132,8 @@ def negative_image(image, mask=None, plot=True):
 
 def posterize(image, mask=None, plot=True):
     """
-    It takes all the millions of original colors and groups them into just a few levels (4).
+    It takes all the millions of original colors
+    and groups them into just a few levels (4).
     """
     try:
         levels = 4
@@ -153,9 +152,11 @@ def sharpen(image, mask=None, plot=True):
     Simple sharpening filter.
     """
     try:
-        kernel = np.array([[0,-1,0],
-                        [-1,5,-1],
-                        [0,-1,0]])
+        kernel = np.array([
+            [0, -1, 0],
+            [-1, 5, -1],
+            [0, -1, 0]
+        ])
         sharp = cv2.filter2D(image, -1, kernel)
         if plot:
             pcv.plot_image(sharp, title="Sharpened")

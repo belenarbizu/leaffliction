@@ -66,7 +66,7 @@ def predict_image(image_path, model_path, class_names):
     confidence = predictions[0][predicted_class_index]
     predicted_class = class_names[predicted_class_index]
 
-    print(f"Predicted class: {predicted_class}. Confidence {confidence:.2f}")
+    print(f"\nPredicted class: {predicted_class}. Confidence {confidence:.2f}")
 
 
 def main():
