@@ -2,6 +2,7 @@ import os
 import cv2
 from pathlib import Path
 from collections import Counter, defaultdict
+import matplotlib.pyplot as plt
 
 
 def get_subdirectory(directory):
@@ -122,3 +123,24 @@ def validate_destination_directory(dst, create=True, obligatory=True):
         print(f"Created destination directory: {dst}")
 
     return dst_path
+
+
+def display_image(image, prediction):
+    """
+    Display the given image and one of the transformations.
+    """
+    plt.figure(figsize=(12, 5))
+    image = cv2.imread(str(image))
+    plt.subplot(1, 2, 1)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    # plt.axis('off')
+    
+    edges = cv2.Canny(image, 150, 200)
+    plt.subplot(1, 2, 2)
+    if len(edges.shape) == 2:
+        plt.imshow(edges, cmap='gray')
+    else:
+        plt.imshow(cv2.cvtColor(edges, cv2.COLOR_BGR2RGB))
+    plt.title(f"Class predicted : {prediction}")
+    plt.tight_layout()
+    plt.show()
