@@ -3,3 +3,7 @@ images/
 env/
 env_train/
 augmented_directory/
+test_grape/
+test_apple/
+model/
+*.zip
