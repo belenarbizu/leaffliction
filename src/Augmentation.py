@@ -4,7 +4,12 @@ import argparse
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
-from utils import get_directory, count_images, validate_source_directory, validate_source_file
+from utils import (
+    get_directory,
+    count_images,
+    validate_source_directory,
+    validate_source_file
+)
 
 
 def rotate_image(image, angle=45):

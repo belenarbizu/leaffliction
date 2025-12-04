@@ -1,7 +1,9 @@
 import os
 import cv2
+import numpy as np
 from pathlib import Path
 from collections import Counter, defaultdict
+import matplotlib.pyplot as plt
 
 
 def get_subdirectory(directory):
@@ -61,7 +63,8 @@ def count_images(images):
 
 def validate_source_directory(src):
     """
-    Validate source directory: must exist and contain subdirectories with photos.
+    Validate source directory: must exist
+    and contain subdirectories with photos.
     """
     src_path = Path(src)
     if not src_path.exists():
@@ -101,3 +104,72 @@ def validate_source_file(src):
         print(f"Error: Unable to load image at {src}")
         exit(1)
     return src_path, image
+
+
+def validate_destination_directory(dst, create=True, obligatory=True):
+    """
+    Validate destination directory:
+    must be a directory (or create if create=True).
+    """
+    if dst is None and obligatory:
+        print("Error: Destination directory is required.")
+        exit(1)
+    dst_path = Path(dst)
+    if dst_path.exists() and not dst_path.is_dir():
+        print(f"Error: Destination {dst} exists but is not a directory.")
+        exit(1)
+
+    if not dst_path.exists() and create:
+        os.makedirs(dst_path, exist_ok=True)
+        print(f"Created destination directory: {dst}")
+
+    return dst_path
+
+
+def display_image(image, predictions, predicted_class, class_names=None):
+    """
+    Display the given image and one of the transformations,
+    plus a bar chart showing predicted probabilities for each class.
+    """
+    fig = plt.figure(figsize=(18, 10), facecolor="burlywood")
+    fig.suptitle('DL Classification', fontsize=22, fontweight='bold')
+    plt.subplot(1, 3, 1)
+    plt.title(
+        f"Class predicted : {predicted_class}",
+        fontsize=18,
+        fontweight="bold",
+        loc="center"
+    )
+
+    img_loaded = cv2.imread(str(image))
+    plt.imshow(cv2.cvtColor(img_loaded, cv2.COLOR_BGR2RGB))
+    plt.axis('off')
+
+    resized_image = cv2.resize(
+        img_loaded, (128, 128), interpolation=cv2.INTER_LINEAR
+    )
+    plt.subplot(1, 3, 2)
+    plt.title("Transformation", fontsize=18, fontweight="bold")
+    plt.imshow(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
+    plt.axis('off')
+
+    plt.subplot(1, 3, 3)
+    preds = np.array(predictions)
+    if preds.ndim == 2 and preds.shape[0] == 1:
+        probs = preds[0]
+    else:
+        probs = preds.flatten()
+
+    perc = probs * 100.0
+    y_pos = np.arange(len(class_names))
+
+    bars = plt.barh(y_pos, perc, color='darkolivegreen')
+    plt.yticks(y_pos, class_names)
+    plt.xlabel('Probability (%)')
+    plt.title('Predicted class probabilities')
+    plt.xlim(0, 100)
+
+    plt.bar_label(bars, fmt="%.1f%%")
+
+    plt.tight_layout()
+    plt.show()

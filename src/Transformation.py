@@ -2,7 +2,11 @@ import argparse
 import cv2
 from pathlib import Path
 import os
-from utils import validate_source_directory, validate_source_file
+from utils import (
+    validate_source_directory,
+    validate_source_file,
+    validate_destination_directory
+)
 import matplotlib.pyplot as plt
 from effects import (
     gaussian_blur,
@@ -14,25 +18,6 @@ from effects import (
     posterize,
     sharpen
 )
-
-
-def validate_destination_directory(dst, create=True, obligatory=True):
-    """
-    Validate destination directory: must be a directory (or create if create=True).
-    """
-    if dst is None and obligatory:
-        print("Error: Destination directory is required.")
-        exit(1)
-    dst_path = Path(dst)
-    if dst_path.exists() and not dst_path.is_dir():
-        print(f"Error: Destination {dst} exists but is not a directory.")
-        exit(1)
-
-    if not dst_path.exists() and create:
-        os.makedirs(dst_path, exist_ok=True)
-        print(f"Created destination directory: {dst}")
-
-    return dst_path
 
 
 def get_all_transformations(advanced=False):
@@ -67,21 +52,21 @@ def collect_image_files(src_path):
     return sorted(files)
 
 
-def process_directory_with_filter(src_path, dst_path, filter_name, advanced=False):
+def process_directory_with_filter(src_path, dst_path, filter, advanced=False):
     """
-    Apply ONE specific filter to all images found recursively in the directory tree.
-    Copies original images to destination first, then adds transformed versions.
+    Apply ONE specific filter to all images found in the directory tree.
+    Copies original images to destination, then adds transformed versions.
     """
     transformations = get_all_transformations(advanced)
 
-    if filter_name not in transformations:
-        print(f"Error: Unknown filter '{filter_name}'")
+    if filter not in transformations:
+        print(f"Error: Unknown filter '{filter}'")
         return
 
-    filter_func = transformations[filter_name]
+    filter_func = transformations[filter]
 
     image_files = collect_image_files(src_path)
-    print(f"Processing: {src_path} with filter: {filter_name}")
+    print(f"Processing: {src_path} with filter: {filter}")
     print(f"Found {len(image_files)} images")
 
     print("Copying original images...")
@@ -92,7 +77,7 @@ def process_directory_with_filter(src_path, dst_path, filter_name, advanced=Fals
         cv2.imwrite(str(out_path), cv2.imread(str(img_file)))
     print(f"Copied {len(image_files)} original images")
 
-    print(f"Applying {filter_name} filter...")
+    print(f"Applying {filter} filter...")
     for img_file in image_files:
         image = cv2.imread(str(img_file))
         if image is None:
@@ -110,16 +95,16 @@ def process_directory_with_filter(src_path, dst_path, filter_name, advanced=Fals
         else:
             transformed = filter_func(image, mask=None, plot=False)
 
-        out_path = dst_path / rel_path.parent / f"{base_name}_{filter_name}{ext}"
+        out_path = dst_path / rel_path.parent / f"{base_name}_{filter}{ext}"
         os.makedirs(out_path.parent, exist_ok=True)
         cv2.imwrite(str(out_path), transformed)
-    print(f"Saved originals + {filter_name} transformations in {dst_path}")
+    print(f"Saved originals + {filter} transformations in {dst_path}")
 
 
 def process_directory_all_filters(src_path, dst_path, advanced=False):
     """
     Apply ALL 6 filters to all images found recursively in the directory tree.
-    Copies original images to destination, then adds all 6 transformed versions.
+    Copies original images to destination, then adds 6 transformed versions.
     """
     image_files = collect_image_files(src_path)
     print(f"Found {len(image_files)} images")
@@ -150,12 +135,12 @@ def process_directory_all_filters(src_path, dst_path, advanced=False):
         results['edges'] = edges_image(image, mask=None, plot=False)
 
         if advanced:
-            roi_result = roi_object(image, mask=None, plot=False)
-            if isinstance(roi_result, tuple):
-                results['roi'] = roi_result[0]
+            rot_res = roi_object(image, mask=None, plot=False)
+            if isinstance(rot_res, tuple):
+                results['roi'] = rot_res[0]
             else:
-                results['roi'] = roi_result
-            results['analyze'] = analyze_image(image, roi_result[1], plot=False)
+                results['roi'] = rot_res
+            results['analyze'] = analyze_image(image, rot_res[1], plot=False)
 
         else:
             results['posterize'] = posterize(image, mask=None, plot=False)
@@ -171,21 +156,21 @@ def process_directory_all_filters(src_path, dst_path, advanced=False):
     print(f"Saved originals + all 6 transformations in {dst_path}")
 
 
-def process_single_image_with_filter(image, filter_name, dst_path, file_name, advanced=False):
+def process_image_with_filter(image, filter, dst_path, file, advanced=False):
     """
-    Apply ONE specific filter to a single image and display original + transformed.
+    Apply ONE filter to a image and display original + transformed.
     """
     transformations = get_all_transformations(advanced)
 
-    if filter_name not in transformations:
-        print(f"Error: Unknown filter '{filter_name}'")
+    if filter not in transformations:
+        print(f"Error: Unknown filter '{filter}'")
         return
 
-    filter_func = transformations[filter_name]
-    if filter_name == 'analyze':
+    filter_func = transformations[filter]
+    if filter == 'analyze':
         roi_result = roi_object(image, mask=None, plot=False)[1]
         transformed = analyze_image(image, roi_result, plot=False)
-    elif filter_name == 'roi':
+    elif filter == 'roi':
         transformed = roi_object(image, mask=None, plot=False)[0]
     else:
         transformed = filter_func(image, mask=None, plot=False)
@@ -201,14 +186,14 @@ def process_single_image_with_filter(image, filter_name, dst_path, file_name, ad
         plt.imshow(transformed, cmap='gray')
     else:
         plt.imshow(cv2.cvtColor(transformed, cv2.COLOR_BGR2RGB))
-    plt.title(f"Transformed - {filter_name}")
+    plt.title(f"Transformed - {filter}")
     plt.axis('off')
     plt.tight_layout()
     plt.show()
 
     if dst_path is not None:
         ext = '.JPG'
-        out_path = dst_path / f"{file_name}_comparison_{filter_name}{ext}"
+        out_path = dst_path / f"{file}_comparison_{filter}{ext}"
         os.makedirs(out_path.parent, exist_ok=True)
 
         if len(transformed.shape) == 2:
@@ -221,9 +206,9 @@ def process_single_image_with_filter(image, filter_name, dst_path, file_name, ad
         print(f"Saved comparison: {out_path}")
 
 
-def process_single_image_all_filters(image, dst_path, file_name, advanced=False):
+def process_image_all_filters(image, dst_path, file_name, advanced=False):
     """
-    Apply ALL 6 filters to a single image and display original + all 6 transformations in grid.
+    Apply 6 filters to a image and display original + transformations in grid.
     """
     results = {'original': image}
     results['mask'] = mask(image, mask=None, plot=False)
@@ -280,50 +265,75 @@ def process_single_image_all_filters(image, dst_path, file_name, advanced=False)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Apply transformations to images.")
-    parser.add_argument("-src", "--source", type=str, help="Source: directory (with subdirectories) or image file", required=True)
-    parser.add_argument("-dst", "--destination", type=str, help="Destination directory (is source is directory then required)", required=False)
-    parser.add_argument("-f", "--filter", type=str, default=None, 
-                        help="Apply specific filter (gaussian, mask, edges, negative, (BASIC: sharpen, posterized), (ADVANCED: roi, analyze))." \
-                        "If not provided, apply all 6.")
-    parser.add_argument("--advanced", action="store_true", help="Use advanced filters (roi, analyze) instead of basic (posterize, sharpen).")
+    parser = argparse.ArgumentParser(
+        description="Apply transformations to images."
+    )
+    parser.add_argument(
+        "-src",
+        "--source",
+        type=str,
+        help="Source: directory (with subdirectories) or image file",
+        required=True
+    )
+    parser.add_argument(
+        "-dst",
+        "--destination",
+        type=str,
+        help="Destination directory (is source is directory then required)",
+        required=False
+    )
+    parser.add_argument(
+        "-f",
+        "--filter",
+        type=str,
+        default=None,
+        help="Apply specific filter (gaussian, mask, edges, negative,"
+        "(BASIC: sharpen, posterized), (ADVANCED: roi, analyze))."
+        "If not provided, apply 6 basic.")
+    parser.add_argument(
+        "--advanced",
+        action="store_true",
+        help="Use advanced filters (roi, analyze)"
+        "instead of basic (posterize, sharpen).")
     args = parser.parse_args()
 
     src = args.source
     dst = args.destination
     filter_name = args.filter
-    advanced = args.advanced
+    adv = args.advanced
 
     src_path = Path(src)
 
     # src is a DIRECTORY
     if src_path.is_dir():
-        print(f"Mode: Batch processing directory")
+        print("Mode: Batch processing directory")
         src_path = validate_source_directory(src)
-        dst_path = validate_destination_directory(dst, create=True, obligatory=True)
+        dst_path = validate_destination_directory(dst)
 
         if filter_name:
-            print(f"Applying filter: {filter_name} to all images in subdirectories...")
-            process_directory_with_filter(src_path, dst_path, filter_name, advanced)
+            print(f"Applying filter: {filter_name} to all images in dirs...")
+            process_directory_with_filter(
+                src_path, dst_path, filter_name, adv
+            )
         else:
-            print(f"Applying all 6 filters to all images in subdirectories...")
-            process_directory_all_filters(src_path, dst_path, advanced)
+            print("Applying all 6 filters to all images in dirs...")
+            process_directory_all_filters(src_path, dst_path, adv)
 
     # src is a FILE
     else:
-        print(f"Mode: Single image processing")
+        print("Mode: Single image processing")
         src_path, image = validate_source_file(src)
         dst_path = None
         if dst is not None:
-            dst_path = validate_destination_directory(dst, create=True, obligatory=False)
-        file_name = src_path.stem
+            dst_path = validate_destination_directory(dst)
+        file = src_path.stem
 
         if filter_name:
             print(f"Applying filter: {filter_name} to single image...")
-            process_single_image_with_filter(image, filter_name, dst_path, file_name, advanced)
+            process_image_with_filter(image, filter_name, dst_path, file, adv)
         else:
-            print(f"Applying all 6 filters to single image and creating grid...")
-            process_single_image_all_filters(image, dst_path, file_name, advanced)
+            print("Applying 6 filters to single image and creating grid...")
+            process_image_all_filters(image, dst_path, file, adv)
 
 
 if __name__ == "__main__":

@@ -49,11 +49,29 @@ python3 ./src/Augmentation.py "images/leaves/"
 **There are 4 possible execution ways:** 
 ![transformations](computed_images/logic_trasformation.png)
 
+image input:
+```bash
+python3 ./src/Transformation.py -src "./images/Apple/Apple_Black_rot/image (1).JPG" -dst new
+
+python3 ./src/Transformation.py -src "./images/Apple/Apple_Black_rot/image (1).JPG" -f negative
+
+python3 ./src/Transformation.py -src "./images/Apple/Apple_Black_rot/image (1).JPG" -f analyze --advanced
+```
+
+directory input:
+```
+python3 ./src/Transformation.py -src "./images/Apple" -dst transformed_apple
+
+python3 ./src/Transformation.py -src "./images/Apple" -dst transformed_apple -f mask
+
+python3 ./src/Transformation.py -src "./images/Apple" -dst transformed_apple -f roi --advanced
+```
+
 ---
 
 ## 4. Classification
 
-1. Train
+### 4.1. Train
 
 This program allows you to split an image dataset into training/validation sets, train a CNN using TensorFlow, and export the trained model along with the class names inside a .zip file.
 ```bash
@@ -74,7 +92,7 @@ Training configuration:
 
 Once the training is complete, the program saves the model as a .h5 file, save the class names in a .csv file and creates a compressed ZIP file containing both files.
 
-2. Predict
+### 4.2. Predict
 
 This program allows you to load a previously trained model (exported as a ZIP file), extract its contents, and classify a single image using the saved CNN.
 ```bash

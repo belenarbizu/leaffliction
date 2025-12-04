@@ -5,6 +5,7 @@ import pandas as pd
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
+from utils import display_image
 
 
 def check_path(image_path):
@@ -66,7 +67,8 @@ def predict_image(image_path, model_path, class_names):
     confidence = predictions[0][predicted_class_index]
     predicted_class = class_names[predicted_class_index]
 
-    print(f"Predicted class: {predicted_class}. Confidence {confidence:.2f}")
+    print(f"\nPredicted class: {predicted_class}. Confidence {confidence:.2f}")
+    return predictions, predicted_class
 
 
 def main():
@@ -94,7 +96,10 @@ def main():
     if not class_names:
         print("No class names found.")
         return
-    predict_image(args.image, model_path, class_names)
+    predictions, predicted_class = predict_image(
+        args.image, model_path, class_names
+    )
+    display_image(args.image, predictions, predicted_class, class_names)
 
 
 if __name__ == "__main__":
