@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
-from utils import get_directory, count_images
+from utils import get_directory, count_images, validate_source_directory, validate_source_file
 
 
 def rotate_image(image, angle=45):
@@ -70,7 +70,7 @@ def display_images(org_image, titles, images):
     images = list(images)
     titles.insert(0, "Original")
     images.insert(0, org_image)
-    plt.figure(figsize=(18, 10))
+    plt.figure(figsize=(16, 8))
 
     for i in range(len(images)):
         plt.subplot(2, 4, 1 + i)
@@ -190,8 +190,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path", type=str)
     args = parser.parse_args()
+    src_path = Path(args.path)
 
-    if os.path.isdir(args.path):
+    # src is a DIRECTORY
+    if src_path.is_dir():
+        src_path = validate_source_directory(src_path)
         target_count, class_counts = get_target_count(args.path)
         print("TARGET COUNT:", target_count)
 
@@ -213,8 +216,10 @@ def main():
                     images,
                     diseases
                 )
+
+    # src is a FILE
     else:
-        image = cv2.imread(args.path)
+        _, image = validate_source_file(src_path)
         augmentations = get_augmentations(image)
         display_images(image, augmentations.keys(), augmentations.values())
 
