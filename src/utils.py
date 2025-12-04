@@ -1,5 +1,6 @@
 import os
 import cv2
+import numpy as np
 from pathlib import Path
 from collections import Counter, defaultdict
 import matplotlib.pyplot as plt
@@ -125,22 +126,50 @@ def validate_destination_directory(dst, create=True, obligatory=True):
     return dst_path
 
 
-def display_image(image, prediction):
+def display_image(image, predictions, predicted_class, class_names=None):
     """
-    Display the given image and one of the transformations.
+    Display the given image and one of the transformations,
+    plus a bar chart showing predicted probabilities for each class.
     """
-    plt.figure(figsize=(12, 5))
-    image = cv2.imread(str(image))
-    plt.subplot(1, 2, 1)
-    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    # plt.axis('off')
-    
-    edges = cv2.Canny(image, 150, 200)
-    plt.subplot(1, 2, 2)
-    if len(edges.shape) == 2:
-        plt.imshow(edges, cmap='gray')
+    fig = plt.figure(figsize=(18, 10), facecolor="burlywood")
+    fig.suptitle('DL Classification', fontsize=22, fontweight='bold')
+    plt.subplot(1, 3, 1)
+    plt.title(
+        f"Class predicted : {predicted_class}",
+        fontsize=18,
+        fontweight="bold",
+        loc="center"
+    )
+
+    img_loaded = cv2.imread(str(image))
+    plt.imshow(cv2.cvtColor(img_loaded, cv2.COLOR_BGR2RGB))
+    plt.axis('off')
+
+    resized_image = cv2.resize(
+        img_loaded, (128, 128), interpolation=cv2.INTER_LINEAR
+    )
+    plt.subplot(1, 3, 2)
+    plt.title("Transformation", fontsize=18, fontweight="bold")
+    plt.imshow(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
+    plt.axis('off')
+
+    plt.subplot(1, 3, 3)
+    preds = np.array(predictions)
+    if preds.ndim == 2 and preds.shape[0] == 1:
+        probs = preds[0]
     else:
-        plt.imshow(cv2.cvtColor(edges, cv2.COLOR_BGR2RGB))
-    plt.title(f"Class predicted : {prediction}")
+        probs = preds.flatten()
+
+    perc = probs * 100.0
+    y_pos = np.arange(len(class_names))
+
+    bars = plt.barh(y_pos, perc, color='darkolivegreen')
+    plt.yticks(y_pos, class_names)
+    plt.xlabel('Probability (%)')
+    plt.title('Predicted class probabilities')
+    plt.xlim(0, 100)
+
+    plt.bar_label(bars, fmt="%.1f%%")
+
     plt.tight_layout()
     plt.show()

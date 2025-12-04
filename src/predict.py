@@ -7,6 +7,7 @@ from tensorflow.keras.preprocessing import image
 import numpy as np
 from utils import display_image
 
+
 def check_path(image_path):
     """
     Check if the provided image path is valid.
@@ -67,7 +68,8 @@ def predict_image(image_path, model_path, class_names):
     predicted_class = class_names[predicted_class_index]
 
     print(f"\nPredicted class: {predicted_class}. Confidence {confidence:.2f}")
-    return predicted_class
+    return predictions, predicted_class
+
 
 def main():
     argparser = argparse.ArgumentParser(
@@ -94,8 +96,10 @@ def main():
     if not class_names:
         print("No class names found.")
         return
-    prediction = predict_image(args.image, model_path, class_names)
-    display_image(args.image, prediction)
+    predictions, predicted_class = predict_image(
+        args.image, model_path, class_names
+    )
+    display_image(args.image, predictions, predicted_class, class_names)
 
 
 if __name__ == "__main__":

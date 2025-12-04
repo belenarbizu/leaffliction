@@ -49,6 +49,24 @@ python3 ./src/Augmentation.py "images/leaves/"
 **There are 4 possible execution ways:** 
 ![transformations](computed_images/logic_trasformation.png)
 
+image input:
+```bash
+python3 ./src/Transformation.py -src "./images/Apple/Apple_Black_rot/image (1).JPG" -dst new
+
+python3 ./src/Transformation.py -src "./images/Apple/Apple_Black_rot/image (1).JPG" -f negative
+
+python3 ./src/Transformation.py -src "./images/Apple/Apple_Black_rot/image (1).JPG" -f analyze --advanced
+```
+
+directory input:
+```
+python3 ./src/Transformation.py -src "./images/Apple" -dst transformed_apple
+
+python3 ./src/Transformation.py -src "./images/Apple" -dst transformed_apple -f mask
+
+python3 ./src/Transformation.py -src "./images/Apple" -dst transformed_apple -f roi --advanced
+```
+
 ---
 
 ## 4. Classification
