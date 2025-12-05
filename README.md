@@ -1,5 +1,11 @@
-# leaffliction
-### 1. Analysis of the Data Set
+# Leaffliction
+
+## Overview
+An image-processing and computer-vision pipeline that automatically transforms plant-leaf photos to support disease-classification workflows.
+
+We built the system using Python, TensorFlow, Keras, PlantCV, and OpenCV, learning which image transformations and CNN model metrics produce effective visual-classification performance, achieving approx 94% prediction accuracy.
+
+## 1. Analysis of the Data Set
 
 This program will analyze a plant directory, counts all images in its subfolders, and generates bar and pie charts showing the distribution of classes.
 ```bash
@@ -9,7 +15,7 @@ python3 ./src/Distribution.py "./Apple"
 <img width="700" height="600" alt="Apple_pie_chart" src="https://github.com/user-attachments/assets/0b6bdb82-b23c-40c3-aa4f-ee045abe9d25" />
 
 --- 
-### 2. Image Transformation and Data Augmentation
+## 2. Image Transformation and Data Augmentation
 
 1. Transform a single image
 Displays the original and transformed versions on screen:
