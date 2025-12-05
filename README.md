@@ -1,5 +1,11 @@
-# leaffliction
-### 1. Analysis of the Data Set
+# Leaffliction
+
+## Overview
+An image-processing and computer-vision pipeline that automatically transforms plant-leaf photos to support disease-classification workflows.
+
+We built the system using Python, TensorFlow, Keras, PlantCV, and OpenCV, learning which image transformations and CNN model metrics produce effective visual-classification performance, achieving approx 94% prediction accuracy.
+
+## 1. Analysis of the Data Set
 
 This program will analyze a plant directory, counts all images in its subfolders, and generates bar and pie charts showing the distribution of classes.
 ```bash
@@ -9,7 +15,7 @@ python3 ./src/Distribution.py "./Apple"
 <img width="700" height="600" alt="Apple_pie_chart" src="https://github.com/user-attachments/assets/0b6bdb82-b23c-40c3-aa4f-ee045abe9d25" />
 
 --- 
-### 2. Image Transformation and Data Augmentation
+## 2. Image Transformation and Data Augmentation
 
 1. Transform a single image
 Displays the original and transformed versions on screen:
@@ -43,11 +49,23 @@ python3 ./src/Augmentation.py "images/leaves/"
 
 ## 3. Image Transformation
 
-![transformations](computed_images/advanced_transformations.jpg)
+The program takes source path, applies 6 transformations to the image or direcotry tree and and saves it in destination directory (in case of photo input not necessary to provide destination).
 
+The advanced transformations may take a while so it is not recommended to use them on a big directories.
 
-**There are 4 possible execution ways:** 
+There are various possible execution ways.
+
 ![transformations](computed_images/logic_trasformation.png)
+
+**Available transformations:**
+- gaussian_blur
+- mask
+- negative_image
+- edges_image
+- posterize
+- sharpen
+- roi_object (advanced)
+- analyze_image (advanced)
 
 image input:
 ```bash
@@ -66,6 +84,12 @@ python3 ./src/Transformation.py -src "./images/Apple" -dst transformed_apple -f 
 
 python3 ./src/Transformation.py -src "./images/Apple" -dst transformed_apple -f roi --advanced
 ```
+
+**Basic transformations**
+![transformations](computed_images/basic_transformations.jpg)
+
+**Advanced transformations**
+![transformations](computed_images/advanced_transformations.jpg)
 
 ---
 
@@ -92,6 +116,8 @@ Training configuration:
 
 Once the training is complete, the program saves the model as a .h5 file, save the class names in a .csv file and creates a compressed ZIP file containing both files.
 
+---
+
 ### 4.2. Predict
 
 This program allows you to load a previously trained model (exported as a ZIP file), extract its contents, and classify a single image using the saved CNN.
@@ -109,3 +135,5 @@ Example output:
 ```bash
 Predicted class: apple_healthy. Confidence 0.97
 ```
+
+![prediction](computed_images/prediction.png)
